@@ -8,6 +8,9 @@ import type { IApp } from "./contracts";
 import { CreateLoggingService } from "./service/LoggingService";
 import type { ILoggingService } from "./service/LoggingService";
 
+import { InMemoryRSVPRepository } from './rsvp/InMemoryRSVPRepository.js';
+import { RSVPService } from './rsvp/RSVPService.js';
+
 export function createComposedApp(logger?: ILoggingService): IApp {
   const resolvedLogger = logger ?? CreateLoggingService();
 
@@ -20,3 +23,8 @@ export function createComposedApp(logger?: ILoggingService): IApp {
 
   return CreateApp(authController, resolvedLogger);
 }
+
+export const rsvpRepository = new InMemoryRSVPRepository();
+
+// Services (assumes eventRepository already exists)
+export const rsvpService = new RSVPService(rsvpRepository, eventRepository);
