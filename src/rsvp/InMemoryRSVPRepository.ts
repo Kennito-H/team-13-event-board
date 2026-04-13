@@ -1,5 +1,5 @@
-import { RSVP, CreateRSVPInput } from './RSVP.js';
-import { RSVPRepository } from './RSVPRepository.js';
+import type { RSVP, CreateRSVPInput } from './RSVP';
+import type { RSVPRepository } from './RSVPRepository';
 
 export class InMemoryRSVPRepository implements RSVPRepository {
   private rsvps: Map<string, RSVP> = new Map();
@@ -27,7 +27,7 @@ export class InMemoryRSVPRepository implements RSVPRepository {
   async update(id: string, updates: Partial<RSVP>): Promise<RSVP | null> {
     const rsvp = this.rsvps.get(id);
     if (!rsvp) return null;
-    
+
     const updated = { ...rsvp, ...updates };
     this.rsvps.set(id, updated);
     return updated;
@@ -41,5 +41,15 @@ export class InMemoryRSVPRepository implements RSVPRepository {
       }
     }
     return count;
+  }
+
+  async findByUserId(userId: string): Promise<RSVP[]> {
+    const userRSVPs: RSVP[] = [];
+    for (const rsvp of this.rsvps.values()) {
+      if (rsvp.userId === userId) {
+        userRSVPs.push(rsvp);
+      }
+    }
+    return userRSVPs;
   }
 }
