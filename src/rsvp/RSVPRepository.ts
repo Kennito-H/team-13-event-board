@@ -6,4 +6,7 @@ export interface RSVPRepository {
   update(id: string, updates: Partial<RSVP>): Promise<RSVP | null>;
   countActiveByEvent(eventId: string): Promise<number>;
   findByUserId(userId: string): Promise<RSVP[]>;
+  countWaitlistedBeforeByEvent(eventId: string, before: Date): Promise<number>;
+  findById(id: string): Promise<RSVP | null>;
+  findFirstWaitlistedByEvent(eventId: string): Promise<RSVP | null>;
 }

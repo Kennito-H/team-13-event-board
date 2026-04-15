@@ -52,4 +52,14 @@ export class InMemoryRSVPRepository implements RSVPRepository {
     }
     return userRSVPs;
   }
+
+  countWaitlistedBeforeByEvent(eventId: string, before: Date): Promise<number> {
+    throw new Error('Method not implemented.');
+  }
+  findById(id: string): Promise<RSVP | null> {
+    throw new Error('Method not implemented.');
+  }
+  findFirstWaitlistedByEvent(eventId: string): Promise<RSVP | null> {
+    throw new Error('Method not implemented.');
+  }
 }
