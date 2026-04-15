@@ -56,8 +56,8 @@ export class InMemoryRSVPRepository implements RSVPRepository {
   countWaitlistedBeforeByEvent(eventId: string, before: Date): Promise<number> {
     throw new Error('Method not implemented.');
   }
-  findById(id: string): Promise<RSVP | null> {
-    throw new Error('Method not implemented.');
+  async findById(id: string): Promise<RSVP | null> {
+    return this.rsvps.get(id) ?? null;
   }
   findFirstWaitlistedByEvent(eventId: string): Promise<RSVP | null> {
     throw new Error('Method not implemented.');
