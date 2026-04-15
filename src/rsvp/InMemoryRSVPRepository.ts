@@ -59,7 +59,17 @@ export class InMemoryRSVPRepository implements RSVPRepository {
   async findById(id: string): Promise<RSVP | null> {
     return this.rsvps.get(id) ?? null;
   }
-  findFirstWaitlistedByEvent(eventId: string): Promise<RSVP | null> {
-    throw new Error('Method not implemented.');
+    
+  async findFirstWaitlistedByEvent(eventId: string): Promise<RSVP | null> {
+    let earliest: RSVP | null = null;
+    for (const rsvp of this.rsvps.values()) {
+      if (rsvp.eventId === eventId && rsvp.status === 'waitlisted') {
+        if (!earliest || rsvp.createdAt < earliest.createdAt) {
+          earliest = rsvp;
+        }
+      }
+    }
+    return earliest;
   }
+
 }
