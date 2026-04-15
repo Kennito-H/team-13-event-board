@@ -21,6 +21,11 @@ export interface IEventService {
     updates: UpdateEventInput,
     userId: string,
   ): Promise<Result<Event, EventError>>;
+
+    publishEvent(
+    eventId: string,
+    userId: string,
+  ): Promise<Result<Event, EventError>>;
 }
 
 class EventService implements IEventService {
@@ -71,6 +76,7 @@ class EventService implements IEventService {
         ),
       );
     }
+    
 
     const validationError = this.validateUpdateInput(updates);
     if (validationError) {
@@ -90,6 +96,36 @@ class EventService implements IEventService {
     };
 
     const savedEvent = await this.eventRepository.save(updatedEvent);
+    return Ok(savedEvent);
+  }
+
+    async publishEvent(
+    eventId: string,
+    userId: string,
+  ): Promise<Result<Event, EventError>> {
+    const existingEvent = await this.eventRepository.findById(eventId);
+
+    if (!existingEvent) {
+      return Err(NotFoundError("Event does not exist."));
+    }
+
+    if (existingEvent.organizerId !== userId) {
+      return Err(
+        UnauthorizedError("Only the organizer can publish this event."),
+      );
+    }
+
+    if (existingEvent.status !== "draft") {
+      return Err(InvalidStateError("Only draft events can be published."));
+    }
+
+    const publishedEvent: Event = {
+      ...existingEvent,
+      status: "published",
+      updatedAt: new Date(),
+    };
+
+    const savedEvent = await this.eventRepository.save(publishedEvent);
     return Ok(savedEvent);
   }
 
