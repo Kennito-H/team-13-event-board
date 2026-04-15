@@ -24,4 +24,10 @@
       <button type="submit">Cancel Event</button>
     </form>
   <% } %>
+  
+  <% if (event.status === "published") { %>
+    <form method="POST" action="/events/<%= event.id %>/rsvp">
+      <button type="submit">RSVP to this Event</button>
+    </form>
+  <% } %>
 </section>
