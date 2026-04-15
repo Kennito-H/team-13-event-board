@@ -1,0 +1,70 @@
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+    <h1 class="text-3xl font-bold text-slate-900 mb-1">My RSVPs</h1>
+    <p class="text-slate-500">Events you have signed up for.</p>
+  </section>
+  
+  <%
+    const now = new Date();
+    const upcoming = rsvpsWithEvents.filter(({ event }) => new Date(event.startDateTime) > now);
+    const past = rsvpsWithEvents.filter(({ event }) => new Date(event.startDateTime) <= now);
+  %>
+  
+  <section class="mb-5">
+    <h2 class="text-xl font-semibold text-slate-800 mb-3">Upcoming</h2>
+  
+    <% if (upcoming.length === 0) { %>
+      <p class="text-slate-500">No upcoming RSVPs.</p>
+    <% } else { %>
+      <ul class="space-y-3">
+        <% for (const { rsvp, event } of upcoming) { %>
+          <li class="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm flex items-center justify-between gap-4">
+            <div>
+              <p class="font-semibold text-slate-900"><%= event.title %></p>
+              <p class="text-sm text-slate-500"><%= event.location %> &middot; <%= new Date(event.startDateTime).toLocaleString() %></p>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+              <% if (rsvp.status === 'going') { %>
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Going</span>
+              <% } else if (rsvp.status === 'waitlisted') { %>
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Waitlisted</span>
+              <% } else { %>
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">Cancelled</span>
+              <% } %>
+              <form method="POST" action="/events/<%= event.id %>/rsvp" class="m-0">
+                <button type="submit" class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer">
+                  <%= rsvp.status === 'cancelled' ? 'Re-RSVP' : 'Cancel RSVP' %>
+                </button>
+              </form>
+            </div>
+          </li>
+        <% } %>
+      </ul>
+    <% } %>
+  </section>
+  
+  <section>
+    <h2 class="text-xl font-semibold text-slate-800 mb-3">Past</h2>
+  
+    <% if (past.length === 0) { %>
+      <p class="text-slate-500">No past RSVPs.</p>
+    <% } else { %>
+      <ul class="space-y-3">
+        <% for (const { rsvp, event } of past) { %>
+          <li class="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm flex items-center justify-between gap-4 opacity-60">
+            <div>
+              <p class="font-semibold text-slate-900"><%= event.title %></p>
+              <p class="text-sm text-slate-500"><%= event.location %> &middot; <%= new Date(event.startDateTime).toLocaleString() %></p>
+            </div>
+            <% if (rsvp.status === 'going') { %>
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Attended</span>
+            <% } else if (rsvp.status === 'waitlisted') { %>
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Waitlisted</span>
+            <% } else { %>
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">Cancelled</span>
+            <% } %>
+          </li>
+        <% } %>
+      </ul>
+    <% } %>
+  </section>
+  
