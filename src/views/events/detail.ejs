@@ -1,0 +1,11 @@
+<h1><%= event.title %></h1>
+
+<p><strong>Status:</strong> <%= event.status %></p>
+<p><strong>Description:</strong> <%= event.description %></p>
+<p><strong>Location:</strong> <%= event.location %></p>
+<p><strong>Category:</strong> <%= event.category %></p>
+<p><strong>Capacity:</strong> <%= event.capacity ?? 'No limit' %></p>
+<p><strong>Starts:</strong> <%= new Date(event.startDateTime).toLocaleString() %></p>
+<p><strong>Ends:</strong> <%= new Date(event.endDateTime).toLocaleString() %></p>
+
+<a href="/events/<%= event.id %>/edit">Edit Event</a>
