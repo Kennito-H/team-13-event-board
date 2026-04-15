@@ -33,6 +33,13 @@ export interface IEventController {
     eventId: string,
     userId: string,
   ): Promise<void>;
+
+   cancelEventFromForm(
+    res: Response,
+    eventId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<void>;
 }
 
 class EventController implements IEventController {
@@ -205,6 +212,54 @@ class EventController implements IEventController {
 
     const publishedEvent: Event = result.value;
     res.redirect(`/events/${publishedEvent.id}`);
+  }
+
+  async cancelEventFromForm(
+    res: Response,
+    eventId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<void> {
+    const result = await this.eventService.cancelEvent(eventId, userId, userRole);
+
+    if (result.ok === false) {
+      const error: EventError = result.value;
+
+      this.logger.warn(`Failed to cancel event ${eventId}: ${error.message}`);
+
+      if (error.name === "NotFoundError") {
+        res.status(404).render("partials/error", {
+          message: error.message,
+          layout: false,
+        });
+        return;
+      }
+
+      if (error.name === "UnauthorizedError") {
+        res.status(403).render("partials/error", {
+          message: error.message,
+          layout: false,
+        });
+        return;
+      }
+
+      if (error.name === "InvalidStateError") {
+        res.status(400).render("partials/error", {
+          message: error.message,
+          layout: false,
+        });
+        return;
+      }
+
+      res.status(500).render("partials/error", {
+        message: "Unexpected server error.",
+        layout: false,
+      });
+      return;
+    }
+
+    const cancelledEvent: Event = result.value;
+    res.redirect(`/events/${cancelledEvent.id}`);
   }
 }
 
