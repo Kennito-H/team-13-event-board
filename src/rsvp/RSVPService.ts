@@ -2,7 +2,7 @@ import { Result, Ok, Err } from '../lib/result';
 import type { RSVP } from './RSVP';
 import type { RSVPRepository } from './RSVPRepository';
 import type { EventRepositoryStub, EventStub } from './StubEventRepository';
-import { InvalidRSVPStateError } from './errors';
+import { InvalidRSVPStateError, UnauthorizedError } from './errors';
 
 class EventNotFoundError extends Error {
   constructor(message = 'Event not found') {
@@ -19,7 +19,8 @@ export interface RSVPWithEvent {
 export interface IRSVPService {
   toggleRSVP(eventId: string, userID: string): Promise<Result<RSVP, EventNotFoundError | InvalidRSVPStateError>>;
   getUserRSVPs(userId: string): Promise<Result<RSVPWithEvent[], never>>;
-  
+  cancelRSVPWithPromotion(rsvpId: string, userId: string): Promise<Result<{ cancelled: RSVP; promoted?: RSVP }, EventNotFoundError | UnauthorizedError>>
+
 }
 
 export class RSVPService implements IRSVPService{
@@ -105,5 +106,41 @@ export class RSVPService implements IRSVPService{
     });
 
     return Ok(rsvpsWithEvents);
+  }
+
+  async cancelRSVPWithPromotion(rsvpId: string, userId: string): Promise<Result<{ cancelled: RSVP; promoted?: RSVP; }, EventNotFoundError | UnauthorizedError>> {
+    const rsvp = await this.rsvpRepo.findById(rsvpId);
+    if (!rsvp) {
+      return Err(new EventNotFoundError('RSVP not found'));
+    }
+
+    if (rsvp.userId !== userId) {
+      return Err(new UnauthorizedError('You can only cancel your own RSVP'));
+    }
+
+    if (rsvp.status === 'cancelled') {
+      return Err(new EventNotFoundError('RSVP is already cancelled'));
+    }
+
+    const wasGoing = rsvp.status === 'going';
+
+    const cancelled = await this.rsvpRepo.update(rsvpId, { status: 'cancelled' });
+
+    if (!wasGoing) {
+      return Ok({ cancelled: cancelled! });
+    }
+
+    const nextInLine = await this.rsvpRepo.findFirstWaitlistedByEvent(rsvp.eventId);
+    if (!nextInLine) {
+      return Ok({ cancelled: cancelled! });
+    }
+
+    const promoted = await this.rsvpRepo.update(nextInLine.id, { status: 'going' });
+    if (!promoted) {
+      await this.rsvpRepo.update(rsvpId, { status: 'going' });
+      return Err(new EventNotFoundError('Promotion failed, cancellation rolled back'));
+    }
+
+    return Ok({ cancelled: cancelled!, promoted });
   }
 }
