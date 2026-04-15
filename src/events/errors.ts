@@ -1,27 +1,49 @@
-export class NotFoundError extends Error {
-  constructor(message = 'Event not found.') {
-    super(message);
-    this.name = 'NotFoundError';
-  }
-}
+export type AuthError =
+  | { name: "InvalidCredentials"; message: string }
+  | { name: "AuthenticationRequired"; message: string }
+  | { name: "AuthorizationRequired"; message: string }
+  | { name: "UserAlreadyExists"; message: string }
+  | { name: "UserNotFound"; message: string }
+  | { name: "ProtectedUserOperation"; message: string }
+  | { name: "ValidationError"; message: string }
+  | { name: "UnexpectedDependencyError"; message: string };
 
-export class UnauthorizedError extends Error {
-  constructor(message = 'You are not allowed to access this event.') {
-    super(message);
-    this.name = 'UnauthorizedError';
-  }
-}
+export const InvalidCredentials = (message: string): AuthError => ({
+  name: "InvalidCredentials",
+  message,
+});
 
-export class ValidationError extends Error {
-  constructor(message = 'Invalid event input.') {
-    super(message);
-    this.name = 'ValidationError';
-  }
-}
+export const AuthenticationRequired = (message: string): AuthError => ({
+  name: "AuthenticationRequired",
+  message,
+});
 
-export class InvalidStateError extends Error {
-  constructor(message = 'Event is not in a valid state for this action.') {
-    super(message);
-    this.name = 'InvalidStateError';
-  }
-}
+export const AuthorizationRequired = (message: string): AuthError => ({
+  name: "AuthorizationRequired",
+  message,
+});
+
+export const UserAlreadyExists = (message: string): AuthError => ({
+  name: "UserAlreadyExists",
+  message,
+});
+
+export const UserNotFound = (message: string): AuthError => ({
+  name: "UserNotFound",
+  message,
+});
+
+export const ProtectedUserOperation = (message: string): AuthError => ({
+  name: "ProtectedUserOperation",
+  message,
+});
+
+export const ValidationError = (message: string): AuthError => ({
+  name: "ValidationError",
+  message,
+});
+
+export const UnexpectedDependencyError = (message: string): AuthError => ({
+  name: "UnexpectedDependencyError",
+  message,
+});
