@@ -1,0 +1,10 @@
+<form method="POST" action="/events/<%= eventId %>/rsvp">
+    <% if (!rsvp || rsvp.status === 'cancelled') { %>
+      <button type="submit">RSVP to this Event</button>
+    <% } else if (rsvp.status === 'waitlisted') { %>
+      <button type="submit">Leave Waitlist</button>
+    <% } else { %>
+      <button type="submit">Cancel RSVP</button>
+    <% } %>
+  </form>
+  

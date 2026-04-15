@@ -8,7 +8,7 @@ export class RSVPController {
   constructor(private rsvpService: RSVPService) {}
 
   async toggleRSVP(req: Request, res: Response, store: AppSessionStore): Promise<void> {
-    const { eventId } = req.params;
+    const eventId = typeof req.params.eventId === 'string' ? req.params.eventId : '';
     const currentUser = getAuthenticatedUser(store);
 
     if (!currentUser) {
@@ -18,7 +18,7 @@ export class RSVPController {
 
     const result = await this.rsvpService.toggleRSVP(eventId, currentUser.userId);
 
-    if (!result.ok) {
+    if (result.ok === false) {
       const errorMessage = result.value.message;
       res.status(result.value instanceof InvalidRSVPStateError ? 400 : 404).render('partials/error', {
         message: errorMessage,
