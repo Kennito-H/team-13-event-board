@@ -11,6 +11,11 @@ import {
 import type { EventError } from "./errors";
 import type { UserRole } from "../auth/User";
 
+export interface SearchEventsInput {
+  query: string;
+}
+ 
+
 export interface IEventService {
   getEventById(
     eventId: string,
@@ -23,16 +28,19 @@ export interface IEventService {
     userId: string,
   ): Promise<Result<Event, EventError>>;
 
-    publishEvent(
+  publishEvent(
     eventId: string,
     userId: string,
   ): Promise<Result<Event, EventError>>;
 
-    cancelEvent(
+  cancelEvent(
     eventId: string,
     userId: string,
     userRole: UserRole,
   ): Promise<Result<Event, EventError>>;
+
+  searchEvents(input: SearchEventsInput): Promise<Result<Event[], EventError>>;
+
 }
 
 class EventService implements IEventService {
@@ -168,6 +176,41 @@ class EventService implements IEventService {
 
     const savedEvent = await this.eventRepository.save(cancelledEvent);
     return Ok(savedEvent);
+  }
+  
+
+  async searchEvents(
+    input: SearchEventsInput,
+  ): Promise<Result<Event[], EventError>> {
+    const raw = input.query.trim();
+ 
+    if (raw.length > 200) {
+      return Err(ValidationError("Search query is too long (max 200 characters)."));
+    }
+ 
+    const allPublished = await this.eventRepository.findByStatus("published");
+    const now = new Date();
+    const upcoming = allPublished.filter((e) => e.startDateTime > now);
+ 
+    if (raw.length === 0) {
+      return Ok(this.sortByDateAsc(upcoming));
+    }
+ 
+    const lower = raw.toLowerCase();
+    const matched = upcoming.filter(
+      (e) =>
+        e.title.toLowerCase().includes(lower) ||
+        e.description.toLowerCase().includes(lower) ||
+        e.location.toLowerCase().includes(lower),
+    );
+ 
+    return Ok(this.sortByDateAsc(matched));
+  }
+
+  private sortByDateAsc(events: Event[]): Event[] {
+    return [...events].sort(
+      (a, b) => a.startDateTime.getTime() - b.startDateTime.getTime(),
+    );
   }
 
   private validateUpdateInput(updates: UpdateEventInput): EventError | null {
