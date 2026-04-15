@@ -16,7 +16,13 @@ export interface RSVPWithEvent {
   event: EventStub;
 }
 
-export class RSVPService {
+export interface IRSVPService {
+  toggleRSVP(eventId: string, userID: string): Promise<Result<RSVP, EventNotFoundError | InvalidRSVPStateError>>;
+  getUserRSVPs(userId: string): Promise<Result<RSVPWithEvent[], never>>;
+  
+}
+
+export class RSVPService implements IRSVPService{
   constructor(
     private rsvpRepo: RSVPRepository,
     private eventRepo: EventRepositoryStub,
