@@ -170,6 +170,51 @@ class EventService implements IEventService {
     return Ok(savedEvent);
   }
 
+  async transitionExpiredEvents(): Promise<Result<number, EventError>> {
+    const published = await this.eventRepository.findByStatus("published");
+    const now = new Date();
+    const expired = published.filter((e) => e.endDateTime <= now);
+ 
+    let count = 0;
+    for (const event of expired) {
+      const updated = await this.eventRepository.updateStatus(event.id, "past");
+      if (updated) count++;
+    }
+ 
+    return Ok(count);
+  }
+ 
+  async getArchivedEvents(
+    input: GetArchivedEventsInput,
+  ): Promise<Result<Event[], EventError>> {
+    const category = input.category?.trim() ?? "";
+ 
+    if (category.length > 100) {
+      return Err(ValidationError("Category filter is too long."));
+    }
+ 
+    const past = await this.eventRepository.findByStatus("past");
+ 
+    const filtered =
+      category.length > 0
+        ? past.filter(
+            (e) => e.category.toLowerCase() === category.toLowerCase(),
+          )
+        : past;
+ 
+    const sorted = [...filtered].sort(
+      (a, b) => b.endDateTime.getTime() - a.endDateTime.getTime(),
+    );
+ 
+    return Ok(sorted);
+  }
+ 
+  async getArchivedCategories(): Promise<Result<string[], EventError>> {
+    const past = await this.eventRepository.findByStatus("past");
+    const unique = [...new Set(past.map((e) => e.category))].sort();
+    return Ok(unique);
+  }
+
   private validateUpdateInput(updates: UpdateEventInput): EventError | null {
     if (!updates.title || updates.title.trim().length === 0) {
       return ValidationError("Title is required.");
