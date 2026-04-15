@@ -9,3 +9,9 @@
 <p><strong>Ends:</strong> <%= new Date(event.endDateTime).toLocaleString() %></p>
 
 <a href="/events/<%= event.id %>/edit">Edit Event</a>
+
+<% if (event.status === "draft") { %>
+  <form method="POST" action="/events/<%= event.id %>/publish">
+    <button type="submit">Publish Event</button>
+  </form>
+<% } %>
