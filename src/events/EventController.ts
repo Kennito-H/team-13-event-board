@@ -2,6 +2,8 @@ import type { Response } from "express";
 import type { ILoggingService } from "../service/LoggingService";
 import type { IEventService } from "./EventService";
 import type { UpdateEventInput } from "./UpdateEventInput";
+import type { EventError } from "./errors";
+import type { Event } from "./Event";
 
 export interface IEventController {
   showEditEventPage(
@@ -39,18 +41,20 @@ class EventController implements IEventController {
   ): Promise<void> {
     const result = await this.eventService.getEventById(eventId, userId);
 
-    if (!result.ok) {
-      if (result.value.name === "NotFoundError") {
+    if (result.ok === false) {
+      const error: EventError = result.value;
+
+      if (error.name === "NotFoundError") {
         res.status(404).render("partials/error", {
-          message: result.value.message,
+          message: error.message,
           layout: false,
         });
         return;
       }
 
-      if (result.value.name === "UnauthorizedError") {
+      if (error.name === "UnauthorizedError") {
         res.status(403).render("partials/error", {
-          message: result.value.message,
+          message: error.message,
           layout: false,
         });
         return;
@@ -63,7 +67,7 @@ class EventController implements IEventController {
       return;
     }
 
-    const event = result.value;
+    const event: Event = result.value;
 
     res.render("events/edit", {
       event,
@@ -97,8 +101,8 @@ class EventController implements IEventController {
 
     const result = await this.eventService.updateEvent(eventId, updates, userId);
 
-    if (!result.ok) {
-      const error = result.value;
+    if (result.ok === false) {
+      const error: EventError = result.value;
 
       this.logger.warn(`Failed to update event ${eventId}: ${error.message}`);
 
@@ -145,7 +149,7 @@ class EventController implements IEventController {
       return;
     }
 
-    const updatedEvent = result.value;
+    const updatedEvent: Event = result.value;
     res.redirect(`/events/${updatedEvent.id}`);
   }
 }
