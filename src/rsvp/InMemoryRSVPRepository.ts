@@ -52,4 +52,31 @@ export class InMemoryRSVPRepository implements RSVPRepository {
     }
     return userRSVPs;
   }
+
+  async countWaitlistedBeforeByEvent(eventId: string, before: Date): Promise<number> {
+    let count = 0;
+    for (const rsvp of this.rsvps.values()) {
+      if (rsvp.eventId === eventId && rsvp.status === 'waitlisted' && rsvp.createdAt < before) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  async findById(id: string): Promise<RSVP | null> {
+    return this.rsvps.get(id) ?? null;
+  }
+    
+  async findFirstWaitlistedByEvent(eventId: string): Promise<RSVP | null> {
+    let earliest: RSVP | null = null;
+    for (const rsvp of this.rsvps.values()) {
+      if (rsvp.eventId === eventId && rsvp.status === 'waitlisted') {
+        if (!earliest || rsvp.createdAt < earliest.createdAt) {
+          earliest = rsvp;
+        }
+      }
+    }
+    return earliest;
+  }
+
 }
