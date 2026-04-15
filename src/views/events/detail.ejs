@@ -15,3 +15,9 @@
     <button type="submit">Publish Event</button>
   </form>
 <% } %>
+
+<% if (event.status === "published") { %>
+  <form method="POST" action="/events/<%= event.id %>/cancel">
+    <button type="submit">Cancel Event</button>
+  </form>
+<% } %>
