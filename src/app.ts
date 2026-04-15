@@ -17,6 +17,7 @@ import {
   touchAppSession,
 } from "./session/AppSession";
 import { ILoggingService } from "./service/LoggingService";
+import { IEventController } from "./events/EventController";
 
 type AsyncRequestHandler = RequestHandler;
 
@@ -35,6 +36,7 @@ class ExpressApp implements IApp {
 
   constructor(
     private readonly authController: IAuthController,
+    private readonly eventController: IEventController,
     private readonly logger: ILoggingService,
   ) {
     this.app = express();
@@ -253,6 +255,83 @@ class ExpressApp implements IApp {
       }),
     );
 
+        // ── Event editing routes ─────────────────────────────────────────
+
+    this.app.get(
+      "/events/:id/edit",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const currentUser = getAuthenticatedUser(sessionStore(req));
+        if (!currentUser) {
+          res.status(401).render("partials/error", {
+            message: AuthenticationRequired("Please log in to continue.").message,
+            layout: false,
+          });
+          return;
+        }
+
+        await this.eventController.showEditEventPage(
+          res,
+          typeof req.params.id === "string" ? req.params.id : "",
+          currentUser.userId,
+        );
+      }),
+    );
+
+    this.app.post(
+      "/events/:id/edit",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const currentUser = getAuthenticatedUser(sessionStore(req));
+        if (!currentUser) {
+          res.status(401).render("partials/error", {
+            message: AuthenticationRequired("Please log in to continue.").message,
+            layout: false,
+          });
+          return;
+        }
+
+        const rawCapacity =
+          typeof req.body.capacity === "string" ? req.body.capacity.trim() : "";
+        const parsedCapacity =
+          rawCapacity === "" ? undefined : Number.parseInt(rawCapacity, 10);
+
+        await this.eventController.updateEventFromForm(
+          res,
+          typeof req.params.id === "string" ? req.params.id : "",
+          currentUser.userId,
+          {
+            title: typeof req.body.title === "string" ? req.body.title : "",
+            description:
+              typeof req.body.description === "string"
+                ? req.body.description
+                : "",
+            location:
+              typeof req.body.location === "string" ? req.body.location : "",
+            category:
+              typeof req.body.category === "string" ? req.body.category : "",
+            capacity: Number.isNaN(parsedCapacity)
+              ? undefined
+              : parsedCapacity,
+            startDateTime:
+              typeof req.body.startDateTime === "string"
+                ? req.body.startDateTime
+                : "",
+            endDateTime:
+              typeof req.body.endDateTime === "string"
+                ? req.body.endDateTime
+                : "",
+          },
+        );
+      }),
+    );
+
     // ── Error handler ────────────────────────────────────────────────
 
     this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
@@ -272,7 +351,8 @@ class ExpressApp implements IApp {
 
 export function CreateApp(
   authController: IAuthController,
+  eventController: IEventController,
   logger: ILoggingService,
 ): IApp {
-  return new ExpressApp(authController, logger);
+  return new ExpressApp(authController, eventController, logger);
 }
