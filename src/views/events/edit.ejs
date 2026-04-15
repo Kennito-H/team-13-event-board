@@ -1,0 +1,84 @@
+<h1>Edit Event</h1>
+
+<% if (pageError) { %>
+  <%- include("../partials/error", { message: pageError }) %>
+<% } %>
+
+<form method="POST" action="/events/<%= event.id %>/edit">
+  <div>
+    <label for="title">Title</label>
+    <input
+      id="title"
+      name="title"
+      type="text"
+      value="<%= event.title ?? '' %>"
+      required
+    />
+  </div>
+
+  <div>
+    <label for="description">Description</label>
+    <textarea
+      id="description"
+      name="description"
+      required
+    ><%= event.description ?? '' %></textarea>
+  </div>
+
+  <div>
+    <label for="location">Location</label>
+    <input
+      id="location"
+      name="location"
+      type="text"
+      value="<%= event.location ?? '' %>"
+      required
+    />
+  </div>
+
+  <div>
+    <label for="category">Category</label>
+    <input
+      id="category"
+      name="category"
+      type="text"
+      value="<%= event.category ?? '' %>"
+      required
+    />
+  </div>
+
+  <div>
+    <label for="capacity">Capacity</label>
+    <input
+      id="capacity"
+      name="capacity"
+      type="number"
+      min="1"
+      value="<%= event.capacity ?? '' %>"
+    />
+  </div>
+
+  <div>
+    <label for="startDateTime">Start</label>
+    <input
+      id="startDateTime"
+      name="startDateTime"
+      type="datetime-local"
+      value="<%= event.startDateTime ? new Date(event.startDateTime).toISOString().slice(0,16) : '' %>"
+      required
+    />
+  </div>
+
+  <div>
+    <label for="endDateTime">End</label>
+    <input
+      id="endDateTime"
+      name="endDateTime"
+      type="datetime-local"
+      value="<%= event.endDateTime ? new Date(event.endDateTime).toISOString().slice(0,16) : '' %>"
+      required
+    />
+  </div>
+
+  <button type="submit">Save Changes</button>
+</form>
