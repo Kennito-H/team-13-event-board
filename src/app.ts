@@ -392,6 +392,17 @@ class ExpressApp implements IApp {
         await this.rsvpController.toggleRSVP(req, res, sessionStore(req));
       }),
     );
+
+    this.app.get(
+      "/my-rsvps",
+      asyncHandler(async (req, res) => {
+        if (!this.requireRole(req, res, ["user"], "Only members can view their RSVPs.")) {
+          return;
+        }
+        await this.rsvpController.getMyRSVPs(req, res, sessionStore(req));
+      }),
+    );
+    
     // ── Error handler ────────────────────────────────────────────────
 
     this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
