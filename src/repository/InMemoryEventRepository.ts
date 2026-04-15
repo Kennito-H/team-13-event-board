@@ -27,6 +27,11 @@ class InMemoryEventRepository implements IEventRepository {
       updatedAt: new Date(event.updatedAt),
     };
   }
+
+  async findAll(): Promise<Event[]> {
+    return Array.from(this.events.values()).map((event) => this.clone(event));
+  }
+
 }
 
 let repositoryInstance: IEventRepository | null = null;
