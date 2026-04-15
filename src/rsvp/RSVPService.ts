@@ -20,7 +20,7 @@ export interface IRSVPService {
   toggleRSVP(eventId: string, userID: string): Promise<Result<RSVP, EventNotFoundError | InvalidRSVPStateError>>;
   getUserRSVPs(userId: string): Promise<Result<RSVPWithEvent[], never>>;
   cancelRSVPWithPromotion(rsvpId: string, userId: string): Promise<Result<{ cancelled: RSVP; promoted?: RSVP }, EventNotFoundError | UnauthorizedError>>
-
+  getWaitlistPosition(eventId: string, userId: string): Promise<Result<number | null, EventNotFoundError>>;
 }
 
 export class RSVPService implements IRSVPService{
@@ -142,5 +142,23 @@ export class RSVPService implements IRSVPService{
     }
 
     return Ok({ cancelled: cancelled!, promoted });
+  }
+
+  async getWaitlistPosition(
+    eventId: string,
+    userId: string,
+  ): Promise<Result<number | null, EventNotFoundError>> {
+    const event = await this.eventRepo.findById(eventId);
+    if (!event) {
+      return Err(new EventNotFoundError('Event not found'));
+    }
+
+    const rsvp = await this.rsvpRepo.findByEventAndUser(eventId, userId);
+    if (!rsvp || rsvp.status !== 'waitlisted') {
+      return Ok(null);
+    }
+
+    const position = await this.rsvpRepo.countWaitlistedBeforeByEvent(eventId, rsvp.createdAt);
+    return Ok(position + 1);
   }
 }
