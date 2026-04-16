@@ -45,7 +45,10 @@ export interface IEventService {
   ): Promise<Result<Event, EventError>>;
 
   searchEvents(input: SearchEventsInput): Promise<Result<Event[], EventError>>;
-
+  
+  listEvents(
+    filters: EventFilters
+  ): Promise<Result<Event[], never>>;
 }
 
 class EventService implements IEventService {
