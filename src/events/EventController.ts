@@ -45,6 +45,7 @@ export interface IEventController {
 
   showEventList(
     res: Response,
+    session: IAppBrowserSession,
     query: { category?: string; timeframe?: string },
   ): Promise<void>;
 
@@ -285,6 +286,7 @@ class EventController implements IEventController {
 
   async showEventList(
     res: Response,
+    session: IAppBrowserSession,
     query: { category?: string; timeframe?: string },
   ): Promise<void> {
     const filters: EventFilters = {};
@@ -308,6 +310,7 @@ class EventController implements IEventController {
     const events = result.value;
 
     res.render("events/list", {
+      session,
       events,
       selectedCategory: query.category ?? "",
       selectedTimeframe: query.timeframe ?? "",
