@@ -311,6 +311,19 @@ class EventService implements IEventService {
 
     return null;
   }
+
+  async listEvents(filters: EventFilters): Promise<Result<Event[], never>> {
+    const published = await this.eventRepository.findByStatus("published");
+
+    const filtered = published.filter((event) => {
+      if (filters.category && event.category !== filters.category) return false;
+      if (filters.startDate && event.startDateTime < filters.startDate) return false;
+      if (filters.endDate && event.startDateTime > filters.endDate) return false;
+      return true;
+    });
+
+    return Ok(this.sortByDateAsc(filtered));
+  }
 }
 
 export function CreateEventService(
