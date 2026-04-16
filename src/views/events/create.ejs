@@ -1,0 +1,26 @@
+<h1>Create Event</h1>
+
+<form method="POST" action="/events">
+  <label>Title:</label>
+  <input type="text" name="title" required />
+
+  <label>Description:</label>
+  <textarea name="description"></textarea>
+
+  <label>Location:</label>
+  <input type="text" name="location" />
+
+  <label>Category:</label>
+  <input type="text" name="category" />
+
+  <label>Start:</label>
+  <input type="datetime-local" name="startDatetime" required />
+
+  <label>End:</label>
+  <input type="datetime-local" name="endDatetime" required />
+
+  <label>Capacity:</label>
+  <input type="number" name="capacity" />
+
+  <button type="submit">Create Event</button>
+</form>
