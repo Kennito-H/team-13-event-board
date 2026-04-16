@@ -15,6 +15,11 @@ export interface SearchEventsInput {
   query: string;
 }
  
+export interface EventFilters {
+  category?: string;
+  startDate?: Date;
+  endDate?: Date;
+}
 
 export interface IEventService {
   getEventById(
