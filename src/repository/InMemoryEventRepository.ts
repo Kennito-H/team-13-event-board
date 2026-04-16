@@ -1,4 +1,4 @@
-import type { Event } from '../events/Event';
+import type { Event, EventStatus } from '../events/Event';
 import type { IEventRepository } from './EventRepository';
 
 class InMemoryEventRepository implements IEventRepository {
@@ -16,6 +16,24 @@ class InMemoryEventRepository implements IEventRepository {
   async save(event: Event): Promise<Event> {
     this.events.set(event.id, this.clone(event));
     return this.clone(event);
+  }
+
+  async findAll(): Promise<Event[]> {
+    return Array.from(this.events.values()).map((e) => this.clone(e));
+  }
+ 
+  async findByStatus(status: EventStatus): Promise<Event[]> {
+    return Array.from(this.events.values())
+      .filter((e) => e.status === status)
+      .map((e) => this.clone(e));
+  }
+ 
+  async updateStatus(id: string, status: EventStatus): Promise<Event | null> {
+    const event = this.events.get(id);
+    if (!event) return null;
+    const updated: Event = { ...event, status, updatedAt: new Date() };
+    this.events.set(id, this.clone(updated));
+    return this.clone(updated);
   }
 
   private clone(event: Event): Event {

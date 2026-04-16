@@ -402,6 +402,23 @@ class ExpressApp implements IApp {
         await this.rsvpController.getMyRSVPs(req, res, sessionStore(req));
       }),
     );
+
+    this.app.get(
+      "/events/search",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+ 
+        const browserSession = recordPageView(sessionStore(req));
+        const query = typeof req.query.q === "string" ? req.query.q : "";
+ 
+        await this.eventController.showSearchPage(
+          res,
+          browserSession,
+          query,
+          this.isHtmxRequest(req),
+        );
+      }),
+    );
     
     // ── Error handler ────────────────────────────────────────────────
 
@@ -413,6 +430,20 @@ class ExpressApp implements IApp {
         layout: false,
       });
     });
+
+    this.app.get(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        await this.eventController.showEventList(res, {
+          category: typeof req.query.category === "string" ? req.query.category : undefined,
+          timeframe: typeof req.query.timeframe === "string" ? req.query.timeframe : undefined,
+        });
+      }),
+    );
   }
 
   getExpressApp(): express.Express {
