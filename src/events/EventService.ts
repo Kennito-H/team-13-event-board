@@ -21,6 +21,10 @@ export interface EventFilters {
   endDate?: Date;
 }
 
+export interface GetArchivedEventsInput {
+  category?: string;
+}
+
 export interface IEventService {
   getEventById(
     eventId: string,
@@ -34,15 +38,23 @@ export interface IEventService {
   ): Promise<Result<Event, EventError>>;
 
   publishEvent(
+  publishEvent(
     eventId: string,
     userId: string,
   ): Promise<Result<Event, EventError>>;
 
   cancelEvent(
+  cancelEvent(
     eventId: string,
     userId: string,
     userRole: UserRole,
   ): Promise<Result<Event, EventError>>;
+
+  searchEvents(input: SearchEventsInput): Promise<Result<Event[], EventError>>;
+  
+  listEvents(
+    filters: EventFilters
+  ): Promise<Result<Event[], never>>;
 
   searchEvents(input: SearchEventsInput): Promise<Result<Event[], EventError>>;
   
@@ -220,6 +232,41 @@ class EventService implements IEventService {
       (a, b) => a.startDateTime.getTime() - b.startDateTime.getTime(),
     );
   }
+  
+
+  async searchEvents(
+    input: SearchEventsInput,
+  ): Promise<Result<Event[], EventError>> {
+    const raw = input.query.trim();
+ 
+    if (raw.length > 200) {
+      return Err(ValidationError("Search query is too long (max 200 characters)."));
+    }
+ 
+    const allPublished = await this.eventRepository.findByStatus("published");
+    const now = new Date();
+    const upcoming = allPublished.filter((e) => e.startDateTime > now);
+ 
+    if (raw.length === 0) {
+      return Ok(this.sortByDateAsc(upcoming));
+    }
+ 
+    const lower = raw.toLowerCase();
+    const matched = upcoming.filter(
+      (e) =>
+        e.title.toLowerCase().includes(lower) ||
+        e.description.toLowerCase().includes(lower) ||
+        e.location.toLowerCase().includes(lower),
+    );
+ 
+    return Ok(this.sortByDateAsc(matched));
+  }
+
+  private sortByDateAsc(events: Event[]): Event[] {
+    return [...events].sort(
+      (a, b) => a.startDateTime.getTime() - b.startDateTime.getTime(),
+    );
+  }
 
   async transitionExpiredEvents(): Promise<Result<number, EventError>> {
     const published = await this.eventRepository.findByStatus("published");
@@ -310,6 +357,19 @@ class EventService implements IEventService {
     }
 
     return null;
+  }
+
+  async listEvents(filters: EventFilters): Promise<Result<Event[], never>> {
+    const published = await this.eventRepository.findByStatus("published");
+
+    const filtered = published.filter((event) => {
+      if (filters.category && event.category !== filters.category) return false;
+      if (filters.startDate && event.startDateTime < filters.startDate) return false;
+      if (filters.endDate && event.startDateTime > filters.endDate) return false;
+      return true;
+    });
+
+    return Ok(this.sortByDateAsc(filtered));
   }
 
   async listEvents(filters: EventFilters): Promise<Result<Event[], never>> {
