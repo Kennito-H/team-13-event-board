@@ -419,6 +419,23 @@ class ExpressApp implements IApp {
         );
       }),
     );
+
+    this.app.get(
+      "/events/archive",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+ 
+        const browserSession = recordPageView(sessionStore(req));
+        const category = typeof req.query.category === "string" ? req.query.category : "";
+ 
+        await this.eventController.showArchivePage(
+          res,
+          browserSession,
+          category,
+          this.isHtmxRequest(req),
+        );
+      }),
+    );
     
     // ── Error handler ────────────────────────────────────────────────
 

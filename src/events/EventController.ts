@@ -48,10 +48,17 @@ export interface IEventController {
     query: { category?: string; timeframe?: string },
   ): Promise<void>;
 
-    showSearchPage(
+  showSearchPage(
     res: Response,
     session: IAppBrowserSession,
     query: string,
+    isHtmx: boolean,
+  ): Promise<void>;
+
+  showArchivePage(
+    res: Response,
+    session: IAppBrowserSession,
+    category: string,
     isHtmx: boolean,
   ): Promise<void>;
 }
@@ -352,6 +359,71 @@ class EventController implements IEventController {
     res.render("events/search", {
       events: result.value,
       query,
+      pageError: null,
+      session,
+    });
+  }
+
+  async showArchivePage(
+    res: Response,
+    session: IAppBrowserSession,
+    category: string,
+    isHtmx: boolean,
+  ): Promise<void> {
+    const transitionResult = await this.eventService.transitionExpiredEvents();
+    if (transitionResult.ok === true && transitionResult.value > 0) {
+      this.logger.info(`Archived ${transitionResult.value} expired event(s) on request.`);
+    }
+ 
+    const [eventsResult, categoriesResult] = await Promise.all([
+      this.eventService.getArchivedEvents({ category }),
+      this.eventService.getArchivedCategories(),
+    ]);
+ 
+    if (eventsResult.ok === false) {
+      const error = eventsResult.value;
+      this.logger.warn(`Archive fetch failed: ${error.message}`);
+      if (isHtmx) {
+        res.status(400).render("events/partials/archive-results", {
+          events: [],
+          category,
+          categories: [],
+          pageError: error.message,
+          layout: false,
+        });
+        return;
+      }
+      res.status(400).render("events/archive", {
+        events: [],
+        category,
+        categories: [],
+        pageError: error.message,
+        session,
+      });
+      return;
+    }
+ 
+    const categories = categoriesResult.ok ? categoriesResult.value : [];
+ 
+    this.logger.info(
+      `Archive: ${eventsResult.value.length} past event(s), category="${category || "all"}"`,
+    );
+ 
+    if (isHtmx) {
+      res.render("events/partials/archive-results", {
+        events: eventsResult.value,
+        category,
+        categories,
+        pageError: null,
+        layout: false,
+      });
+      return;
+    }
+ 
+    res.render("events/archive", {
+      events: eventsResult.value,
+      category,
+      categories,
       pageError: null,
       session,
     });
