@@ -14,6 +14,16 @@ import type { UserRole } from "../auth/User";
 export interface SearchEventsInput {
   query: string;
 }
+export interface CreateEventInput {
+  title: string;
+  description: string;
+  location: string;
+  category: string;
+  capacity?: number;
+  startDateTime: Date;
+  endDateTime: Date;
+  organizerId: string;
+}
 
 export interface GetArchivedEventsInput {
   category?: string;
@@ -61,6 +71,9 @@ export interface IEventService {
   listEvents(
     filters: EventFilters
   ): Promise<Result<Event[], never>>;
+
+  createEvent(input: CreateEventInput): Promise<Result<Event, EventError>>;
+
 }
 
 class EventService implements IEventService {
@@ -278,6 +291,33 @@ class EventService implements IEventService {
     return Ok(unique);
   }
 
+  async createEvent(input: CreateEventInput): Promise<Result<Event, EventError>> {
+    const validationError = this.validateUpdateInput(input);
+    if (validationError) {
+      return Err(validationError);
+    }
+
+    const now = new Date();
+    const newEvent: Event = {
+      id: crypto.randomUUID(),
+      title: input.title.trim(),
+      description: input.description.trim(),
+      location: input.location.trim(),
+      category: input.category.trim(),
+      capacity: input.capacity,
+      status: "draft",
+      startDateTime: input.startDateTime,
+      endDateTime: input.endDateTime,
+      organizerId: input.organizerId,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const savedEvent = await this.eventRepository.save(newEvent);
+    return Ok(savedEvent);
+  }
+
+
   private validateUpdateInput(updates: UpdateEventInput): EventError | null {
     if (!updates.title || updates.title.trim().length === 0) {
       return ValidationError("Title is required.");
@@ -336,6 +376,7 @@ class EventService implements IEventService {
 
     return Ok(this.sortByDateAsc(filtered));
   }
+
 }
 
 export function CreateEventService(
