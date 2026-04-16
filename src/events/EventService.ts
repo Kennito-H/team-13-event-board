@@ -11,6 +11,10 @@ import {
 import type { EventError } from "./errors";
 import type { UserRole } from "../auth/User";
 
+export interface GetArchivedEventsInput {
+  category?: string;
+}
+
 export interface IEventService {
   getEventById(
     eventId: string,
