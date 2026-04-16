@@ -5,6 +5,7 @@ import type { UpdateEventInput } from "./UpdateEventInput";
 import type { EventError } from "./errors";
 import type { Event } from "./Event";
 import type { UserRole } from "../auth/User";
+import { IAppBrowserSession } from "../session/AppSession";
 
 
 export interface IEventController {
@@ -35,7 +36,7 @@ export interface IEventController {
     userId: string,
   ): Promise<void>;
 
-   cancelEventFromForm(
+  cancelEventFromForm(
     res: Response,
     eventId: string,
     userId: string,
@@ -45,6 +46,13 @@ export interface IEventController {
   showEventList(
     res: Response,
     query: { category?: string; timeframe?: string },
+  ): Promise<void>;
+
+    showSearchPage(
+    res: Response,
+    session: IAppBrowserSession,
+    query: string,
+    isHtmx: boolean,
   ): Promise<void>;
 }
 
@@ -297,6 +305,55 @@ class EventController implements IEventController {
       selectedCategory: query.category ?? "",
       selectedTimeframe: query.timeframe ?? "",
       pageError: null,
+    });
+  }
+
+  async showSearchPage(
+    res: Response,
+    session: IAppBrowserSession,
+    query: string,
+    isHtmx: boolean,
+  ): Promise<void> {
+    const result = await this.eventService.searchEvents({ query });
+ 
+    if (result.ok === false) {
+      const error = result.value;
+      this.logger.warn(`Search failed: ${error.message}`);
+      if (isHtmx) {
+        res.status(400).render("events/partials/search-results", {
+          events: [],
+          query,
+          pageError: error.message,
+          layout: false,
+        });
+        return;
+      }
+      res.status(400).render("events/search", {
+        events: [],
+        query,
+        pageError: error.message,
+        session,
+      });
+      return;
+    }
+ 
+    this.logger.info(`Search "${query}" returned ${result.value.length} result(s)`);
+ 
+    if (isHtmx) {
+      res.render("events/partials/search-results", {
+        events: result.value,
+        query,
+        pageError: null,
+        layout: false,
+      });
+      return;
+    }
+ 
+    res.render("events/search", {
+      events: result.value,
+      query,
+      pageError: null,
+      session,
     });
   }
 
