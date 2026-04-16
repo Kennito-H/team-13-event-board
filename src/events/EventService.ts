@@ -14,6 +14,10 @@ import type { UserRole } from "../auth/User";
 export interface SearchEventsInput {
   query: string;
 }
+
+export interface GetArchivedEventsInput {
+  category?: string;
+}
  
 export interface EventFilters {
   category?: string;
