@@ -49,6 +49,14 @@ export interface IEventService {
   ): Promise<Result<Event, EventError>>;
 
   searchEvents(input: SearchEventsInput): Promise<Result<Event[], EventError>>;
+
+  transitionExpiredEvents(): Promise<Result<number, EventError>>;
+ 
+  getArchivedEvents(
+    input: GetArchivedEventsInput,
+  ): Promise<Result<Event[], EventError>>;
+ 
+  getArchivedCategories(): Promise<Result<string[], EventError>>;
   
   listEvents(
     filters: EventFilters
