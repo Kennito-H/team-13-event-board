@@ -257,6 +257,40 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.get(
+      "/events/search",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+ 
+        const browserSession = recordPageView(sessionStore(req));
+        const query = typeof req.query.q === "string" ? req.query.q : "";
+ 
+        await this.eventController.showSearchPage(
+          res,
+          browserSession,
+          query,
+          this.isHtmxRequest(req),
+        );
+      }),
+    );
+
+    this.app.get(
+      "/events/archive",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+ 
+        const browserSession = recordPageView(sessionStore(req));
+        const category = typeof req.query.category === "string" ? req.query.category : "";
+ 
+        await this.eventController.showArchivePage(
+          res,
+          browserSession,
+          category,
+          this.isHtmxRequest(req),
+        );
+      }),
+    );
+
         // ── Event editing routes ─────────────────────────────────────────
 
     this.app.get(
@@ -403,39 +437,6 @@ class ExpressApp implements IApp {
       }),
     );
 
-    this.app.get(
-      "/events/search",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
- 
-        const browserSession = recordPageView(sessionStore(req));
-        const query = typeof req.query.q === "string" ? req.query.q : "";
- 
-        await this.eventController.showSearchPage(
-          res,
-          browserSession,
-          query,
-          this.isHtmxRequest(req),
-        );
-      }),
-    );
-
-    this.app.get(
-      "/events/archive",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
- 
-        const browserSession = recordPageView(sessionStore(req));
-        const category = typeof req.query.category === "string" ? req.query.category : "";
- 
-        await this.eventController.showArchivePage(
-          res,
-          browserSession,
-          category,
-          this.isHtmxRequest(req),
-        );
-      }),
-    );
     
     // ── Error handler ────────────────────────────────────────────────
 

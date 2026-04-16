@@ -213,22 +213,23 @@ class EventService implements IEventService {
   
 
   async searchEvents(
-    input: SearchEventsInput,
-  ): Promise<Result<Event[], EventError>> {
+  input: SearchEventsInput,
+): Promise<Result<Event[], EventError>> {
+  try {
     const raw = input.query.trim();
- 
+
     if (raw.length > 200) {
       return Err(ValidationError("Search query is too long (max 200 characters)."));
     }
- 
+
     const allPublished = await this.eventRepository.findByStatus("published");
     const now = new Date();
     const upcoming = allPublished.filter((e) => e.startDateTime > now);
- 
+
     if (raw.length === 0) {
       return Ok(this.sortByDateAsc(upcoming));
     }
- 
+
     const lower = raw.toLowerCase();
     const matched = upcoming.filter(
       (e) =>
@@ -236,9 +237,13 @@ class EventService implements IEventService {
         e.description.toLowerCase().includes(lower) ||
         e.location.toLowerCase().includes(lower),
     );
- 
+
     return Ok(this.sortByDateAsc(matched));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error in searchEvents";
+    return Err(ValidationError(message));
   }
+}
 
   private sortByDateAsc(events: Event[]): Event[] {
     return [...events].sort(
