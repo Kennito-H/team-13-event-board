@@ -1,0 +1,39 @@
+<% if (pageError) { %>
+  <%- include("../partials/error", { message: pageError }) %>
+<% } else if (events.length === 0) { %>
+  <section class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg text-center">
+    <% if (category && category.trim().length > 0) { %>
+      <p class="text-slate-500 mb-1">No archived events in the <strong class="text-slate-700"><%= category %></strong> category.</p>
+      <p class="text-sm text-slate-400">Try selecting a different category or view all.</p>
+    <% } else { %>
+      <p class="text-slate-500">No past events yet.</p>
+    <% } %>
+  </section>
+<% } else { %>
+  <p class="text-sm text-slate-500 mb-3">
+    <%= events.length %> past event<%= events.length === 1 ? '' : 's' %>
+    <% if (category && category.trim().length > 0) { %>
+      in <strong class="text-slate-700"><%= category %></strong>
+    <% } %>
+  </p>
+
+  <ul class="list-none m-0 p-0 grid gap-3.5">
+    <% for (const event of events) { %>
+      <li class="p-5 border border-slate-200 rounded-2xl bg-slate-50 shadow-lg opacity-90">
+        <div class="flex items-center justify-between gap-3 mb-2">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-600">
+            <%= event.category %>
+          </span>
+          <span class="text-sm text-slate-400">
+            Ended <%= event.endDateTime.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
+          </span>
+        </div>
+        <h2 class="text-lg font-semibold text-slate-700 mb-1"><%= event.title %></h2>
+        <p class="text-sm text-slate-400 mb-2">📍 <%= event.location %></p>
+        <p class="text-sm text-slate-500 leading-relaxed mb-0">
+          <%= event.description.length > 160 ? event.description.slice(0, 157) + '…' : event.description %>
+        </p>
+      </li>
+    <% } %>
+  </ul>
+<% } %>
