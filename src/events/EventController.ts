@@ -1,11 +1,12 @@
 import type { Response } from "express";
 import type { ILoggingService } from "../service/LoggingService";
-import type { IEventService, EventFilters } from "./EventService";
+import type { IEventService, EventFilters, CreateEventInput } from "./EventService";
 import type { UpdateEventInput } from "./UpdateEventInput";
 import type { EventError } from "./errors";
 import type { Event } from "./Event";
 import type { UserRole } from "../auth/User";
 import { IAppBrowserSession } from "../session/AppSession";
+
 
 
 export interface IEventController {
@@ -45,6 +46,7 @@ export interface IEventController {
 
   showEventList(
     res: Response,
+    session: IAppBrowserSession,
     query: { category?: string; timeframe?: string },
   ): Promise<void>;
 
@@ -60,7 +62,29 @@ export interface IEventController {
     session: IAppBrowserSession,
     category: string,
     isHtmx: boolean,
+
   ): Promise<void>;
+
+    showCreateEventPage(
+    res: Response,
+    session: IAppBrowserSession,
+  ): Promise<void>;
+
+  createEventFromForm(
+    res: Response,
+    session: IAppBrowserSession,
+    userId: string,
+    form: {
+      title: string;
+      description: string;
+      location: string;
+      category: string;
+      capacity?: number;
+      startDateTime: string;
+      endDateTime: string;
+    },
+  ): Promise<void>;
+
 }
 
 class EventController implements IEventController {
@@ -285,6 +309,7 @@ class EventController implements IEventController {
 
   async showEventList(
     res: Response,
+    session: IAppBrowserSession,
     query: { category?: string; timeframe?: string },
   ): Promise<void> {
     const filters: EventFilters = {};
@@ -308,6 +333,7 @@ class EventController implements IEventController {
     const events = result.value;
 
     res.render("events/list", {
+      session,
       events,
       selectedCategory: query.category ?? "",
       selectedTimeframe: query.timeframe ?? "",
@@ -428,6 +454,63 @@ class EventController implements IEventController {
       session,
     });
   }
+
+  async showCreateEventPage(
+    res: Response,
+    session: IAppBrowserSession,
+  ): Promise<void> {
+    res.render("events/create", { pageError: null });
+  }
+
+  async createEventFromForm(
+    res: Response,
+    session: IAppBrowserSession,
+    userId: string,
+    form: {
+      title: string;
+      description: string;
+      location: string;
+      category: string;
+      capacity?: number;
+      startDateTime: string;
+      endDateTime: string;
+    },
+  ): Promise<void> {
+    const result = await this.eventService.createEvent({
+      title: form.title,
+      description: form.description,
+      location: form.location,
+      category: form.category,
+      capacity: form.capacity,
+      startDateTime: new Date(form.startDateTime),
+      endDateTime: new Date(form.endDateTime),
+      organizerId: userId,
+    });
+
+    if (result.ok === false) {
+      const error = result.value;
+      this.logger.warn(`Failed to create event: ${error.message}`);
+
+      if (error.name === "ValidationError") {
+        res.status(400).render("events/create", {
+          session,
+          form,
+          pageError: error.message,
+        });
+        return;
+      }
+
+      res.status(500).render("partials/error", {
+        message: "Unexpected server error.",
+        layout: false,
+      });
+      return;
+    }
+
+    const newEvent = result.value;
+    res.redirect(`/events/${newEvent.id}/edit`);
+  }
+
 
   private endOfWeek(date: Date): Date {
     const d = new Date(date);

@@ -447,6 +447,58 @@ class ExpressApp implements IApp {
         layout: false,
       });
     });
+    
+    this.app.get(
+      "/events/new",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+        const browserSession = recordPageView(sessionStore(req));
+        await this.eventController.showCreateEventPage(res, browserSession);
+      }),
+    );
+
+    this.app.post(
+      "/events",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const currentUser = getAuthenticatedUser(sessionStore(req));
+        if (!currentUser) {
+          res.status(401).render("partials/error", {
+            message: AuthenticationRequired("Please log in to continue.").message,
+            layout: false,
+          });
+          return;
+        }
+
+        const rawCapacity =
+          typeof req.body.capacity === "string" ? req.body.capacity.trim() : "";
+        const parsedCapacity =
+          rawCapacity === "" ? undefined : Number.parseInt(rawCapacity, 10);
+
+        const browserSession = 
+          touchAppSession(sessionStore(req));
+
+        await this.eventController.createEventFromForm(
+          res,
+          browserSession,
+          currentUser.userId,
+          {
+            title: typeof req.body.title === "string" ? req.body.title : "",
+            description: typeof req.body.description === "string" ? req.body.description : "",
+            location: typeof req.body.location === "string" ? req.body.location : "",
+            category: typeof req.body.category === "string" ? req.body.category : "",
+            capacity: Number.isNaN(parsedCapacity) ? undefined : parsedCapacity,
+            startDateTime: typeof req.body.startDateTime === "string" ? req.body.startDateTime : "",
+            endDateTime: typeof req.body.endDateTime === "string" ? req.body.endDateTime : "",
+          },
+        );
+      }),
+    );
 
     this.app.get(
       "/events",
@@ -455,7 +507,8 @@ class ExpressApp implements IApp {
           return;
         }
 
-        await this.eventController.showEventList(res, {
+        const browserSession = recordPageView(sessionStore(req));
+        await this.eventController.showEventList(res, browserSession, {
           category: typeof req.query.category === "string" ? req.query.category : undefined,
           timeframe: typeof req.query.timeframe === "string" ? req.query.timeframe : undefined,
         });

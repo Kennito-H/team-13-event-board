@@ -1,26 +1,84 @@
 <h1>Create Event</h1>
 
+<% if (pageError) { %>
+  <%- include("../partials/error", { message: pageError }) %>
+<% } %>
+
 <form method="POST" action="/events">
-  <label>Title:</label>
-  <input type="text" name="title" required />
+  <div>
+    <label for="title">Title</label>
+    <input
+      id="title"
+      name="title"
+      type="text"
+      value="<%= (typeof form !== 'undefined' && form.title) ? form.title : '' %>"
+      required
+    />
+  </div>
 
-  <label>Description:</label>
-  <textarea name="description"></textarea>
+  <div>
+    <label for="description">Description</label>
+    <textarea
+      id="description"
+      name="description"
+      required
+    ><%= (typeof form !== 'undefined' && form.description) ? form.description : '' %></textarea>
+  </div>
 
-  <label>Location:</label>
-  <input type="text" name="location" />
+  <div>
+    <label for="location">Location</label>
+    <input
+      id="location"
+      name="location"
+      type="text"
+      value="<%= (typeof form !== 'undefined' && form.location) ? form.location : '' %>"
+      required
+    />
+  </div>
 
-  <label>Category:</label>
-  <input type="text" name="category" />
+  <div>
+    <label for="category">Category</label>
+    <input
+      id="category"
+      name="category"
+      type="text"
+      value="<%= (typeof form !== 'undefined' && form.category) ? form.category : '' %>"
+      required
+    />
+  </div>
 
-  <label>Start:</label>
-  <input type="datetime-local" name="startDatetime" required />
+  <div>
+    <label for="capacity">Capacity</label>
+    <input
+      id="capacity"
+      name="capacity"
+      type="number"
+      min="1"
+      value="<%= (typeof form !== 'undefined' && form.capacity) ? form.capacity : '' %>"
+    />
+  </div>
 
-  <label>End:</label>
-  <input type="datetime-local" name="endDatetime" required />
+  <div>
+    <label for="startDateTime">Start</label>
+    <input
+      id="startDateTime"
+      name="startDateTime"
+      type="datetime-local"
+      value="<%= (typeof form !== 'undefined' && form.startDateTime) ? form.startDateTime : '' %>"
+      required
+    />
+  </div>
 
-  <label>Capacity:</label>
-  <input type="number" name="capacity" />
+  <div>
+    <label for="endDateTime">End</label>
+    <input
+      id="endDateTime"
+      name="endDateTime"
+      type="datetime-local"
+      value="<%= (typeof form !== 'undefined' && form.endDateTime) ? form.endDateTime : '' %>"
+      required
+    />
+  </div>
 
   <button type="submit">Create Event</button>
 </form>
