@@ -1,0 +1,45 @@
+<%- layout('layouts/base') %>
+
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+  <h1 class="text-3xl font-bold text-slate-900 mb-3">Event Search</h1>
+  <p class="text-slate-500">
+    Find published upcoming events by title, description, or location.
+  </p>
+</section>
+
+<% if (pageError) { %>
+  <%- include("partials/error", { message: pageError }) %>
+<% } %>
+
+<section class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-5">
+  <form
+    class="flex gap-2.5"
+    action="/events/search"
+    method="GET"
+    hx-get="/events/search"
+    hx-target="#search-results"
+    hx-swap="innerHTML"
+    hx-trigger="input delay:300ms from:#search-input, submit"
+    hx-push-url="true"
+  >
+    <input
+      id="search-input"
+      type="text"
+      name="q"
+      value="<%= query %>"
+      placeholder="Search events…"
+      autocomplete="off"
+      class="flex-1 px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-blue-500/20 focus:border-blue-500"
+    />
+    <button
+      type="submit"
+      class="px-4 py-2.5 rounded-lg bg-blue-600 text-white font-medium cursor-pointer hover:bg-blue-700"
+    >
+      Search
+    </button>
+  </form>
+</section>
+
+<div id="search-results">
+  <%- include("events/partials/search-results", { events, query, pageError: null }) %>
+</div>
