@@ -402,6 +402,23 @@ class ExpressApp implements IApp {
         await this.rsvpController.getMyRSVPs(req, res, sessionStore(req));
       }),
     );
+
+    this.app.get(
+      "/events/search",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+ 
+        const browserSession = recordPageView(sessionStore(req));
+        const query = typeof req.query.q === "string" ? req.query.q : "";
+ 
+        await this.eventController.showSearchPage(
+          res,
+          browserSession,
+          query,
+          this.isHtmxRequest(req),
+        );
+      }),
+    );
     
     // ── Error handler ────────────────────────────────────────────────
 
