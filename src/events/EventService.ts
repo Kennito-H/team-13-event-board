@@ -15,6 +15,11 @@ export interface SearchEventsInput {
   query: string;
 }
  
+export interface EventFilters {
+  category?: string;
+  startDate?: Date;
+  endDate?: Date;
+}
 
 export interface IEventService {
   getEventById(
@@ -40,7 +45,10 @@ export interface IEventService {
   ): Promise<Result<Event, EventError>>;
 
   searchEvents(input: SearchEventsInput): Promise<Result<Event[], EventError>>;
-
+  
+  listEvents(
+    filters: EventFilters
+  ): Promise<Result<Event[], never>>;
 }
 
 class EventService implements IEventService {
@@ -302,6 +310,19 @@ class EventService implements IEventService {
     }
 
     return null;
+  }
+
+  async listEvents(filters: EventFilters): Promise<Result<Event[], never>> {
+    const published = await this.eventRepository.findByStatus("published");
+
+    const filtered = published.filter((event) => {
+      if (filters.category && event.category !== filters.category) return false;
+      if (filters.startDate && event.startDateTime < filters.startDate) return false;
+      if (filters.endDate && event.startDateTime > filters.endDate) return false;
+      return true;
+    });
+
+    return Ok(this.sortByDateAsc(filtered));
   }
 }
 
