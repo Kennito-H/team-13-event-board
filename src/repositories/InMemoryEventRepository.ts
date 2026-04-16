@@ -1,7 +1,7 @@
 // src/repositories/InMemoryEventRepository.ts
 
 import { randomUUID } from "crypto"
-// import { Event } from "../event/Event"
+import { Event } from "../event/Event"
 
 // In-memory storage
 const events = new Map<string, Event>()
