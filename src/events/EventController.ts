@@ -1,10 +1,11 @@
 import type { Response } from "express";
 import type { ILoggingService } from "../service/LoggingService";
-import type { IEventService } from "./EventService";
+import type { IEventService, EventFilters } from "./EventService";
 import type { UpdateEventInput } from "./UpdateEventInput";
 import type { EventError } from "./errors";
 import type { Event } from "./Event";
 import type { UserRole } from "../auth/User";
+
 
 export interface IEventController {
   showEditEventPage(
@@ -39,6 +40,11 @@ export interface IEventController {
     eventId: string,
     userId: string,
     userRole: UserRole,
+  ): Promise<void>;
+
+  showEventList(
+    res: Response,
+    query: { category?: string; timeframe?: string },
   ): Promise<void>;
 }
 
