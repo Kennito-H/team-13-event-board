@@ -1,0 +1,61 @@
+<%- layout('layouts/base') %>
+
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+  <h1 class="text-3xl font-bold text-slate-900 mb-3">Event Archive</h1>
+  <p class="text-slate-500">
+    Browse past events in reverse chronological order. Filter by category to narrow the list.
+  </p>
+</section>
+
+<% if (pageError) { %>
+  <%- include("partials/error", { message: pageError }) %>
+<% } %>
+
+<% if (categories.length > 0) { %>
+  <section class="p-5 border border-slate-200 rounded-2xl bg-white shadow-lg mb-5">
+    <form
+      action="/events/archive"
+      method="GET"
+      hx-get="/events/archive"
+      hx-target="#archive-results"
+      hx-swap="innerHTML"
+      hx-push-url="true"
+      hx-trigger="change from:.category-radio"
+    >
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-sm font-medium text-slate-600 mr-1">Filter:</span>
+
+        <label class="cursor-pointer">
+          <input class="category-radio sr-only" type="radio" name="category" value="" <%= category === '' ? 'checked' : '' %> />
+          <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border transition-colors
+            <%= category === '' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600' %>">
+            All
+          </span>
+        </label>
+
+        <% for (const cat of categories) { %>
+          <label class="cursor-pointer">
+            <input class="category-radio sr-only" type="radio" name="category" value="<%= cat %>" <%= category === cat ? 'checked' : '' %> />
+            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border transition-colors
+              <%= category === cat ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600' %>">
+              <%= cat %>
+            </span>
+          </label>
+        <% } %>
+
+        <noscript>
+          <button
+            type="submit"
+            class="px-3.5 py-1.5 rounded-lg bg-blue-600 text-white text-sm font-medium cursor-pointer hover:bg-blue-700"
+          >
+            Apply
+          </button>
+        </noscript>
+      </div>
+    </form>
+  </section>
+<% } %>
+
+<div id="archive-results">
+  <%- include("events/partials/archive-results", { events, category, categories, pageError: null }) %>
+</div>
