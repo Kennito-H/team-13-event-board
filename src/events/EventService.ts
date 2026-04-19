@@ -45,6 +45,13 @@ export interface IEventService {
     eventId: string,
     updates: UpdateEventInput,
     userId: string,
+    userRole: UserRole,
+  ): Promise<Result<Event, EventError>>;
+
+  getEditableEventById(
+    eventId: string,
+    userId: string,
+    userRole: UserRole,
   ): Promise<Result<Event, EventError>>;
 
   publishEvent(
@@ -98,10 +105,31 @@ class EventService implements IEventService {
     return Ok(event);
   }
 
+  async getEditableEventById(
+    eventId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<Result<Event, EventError>> {
+    const event = await this.eventRepository.findById(eventId);
+
+    if (!event) {
+      return Err(NotFoundError("Event does not exist."));
+    }
+
+    const editError = this.canEditEvent(event, userId, userRole);
+    if (editError) {
+      return Err(editError);
+    }
+
+    return Ok(event);
+  }
+
+
   async updateEvent(
     eventId: string,
     updates: UpdateEventInput,
     userId: string,
+    userRole: UserRole,
   ): Promise<Result<Event, EventError>> {
     const existingEvent = await this.eventRepository.findById(eventId);
 
@@ -109,22 +137,10 @@ class EventService implements IEventService {
       return Err(NotFoundError("Event does not exist."));
     }
 
-    if (existingEvent.organizerId !== userId) {
-      return Err(UnauthorizedError("Only the organizer can edit this event."));
-    }
-
-    if (
-      existingEvent.status === "published" ||
-      existingEvent.status === "cancelled" ||
-      existingEvent.status === "past"
-    ) {
-      return Err(
-        InvalidStateError(
-          "Published, cancelled, and past events cannot be edited.",
-        ),
-      );
-    }
-    
+    const editError = this.canEditEvent(existingEvent, userId, userRole);
+    if (editError) {
+      return Err(editError);
+    }    
 
     const validationError = this.validateUpdateInput(updates);
     if (validationError) {
@@ -244,6 +260,29 @@ class EventService implements IEventService {
     return Err(ValidationError(message));
   }
 }
+  private canEditEvent(
+    event: Event,
+    userId: string,
+    userRole: UserRole,
+  ): EventError | null {
+    const isOrganizer = event.organizerId === userId;
+    const isAdmin = userRole === "admin";
+
+    if (!isOrganizer && !isAdmin) {
+      return UnauthorizedError(
+        "Only the organizer or an admin can edit this event.",
+      );
+    }
+
+    if (event.status === "cancelled" || event.status === "past") {
+      return InvalidStateError(
+        "Cancelled and past events cannot be edited.",
+      );
+    }
+
+    return null;
+  }
+
 
   private sortByDateAsc(events: Event[]): Event[] {
     return [...events].sort(
