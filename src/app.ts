@@ -313,6 +313,7 @@ class ExpressApp implements IApp {
           res,
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
+          currentUser.role,
         );
       }),
     );
@@ -342,6 +343,7 @@ class ExpressApp implements IApp {
           res,
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
+          currentUser.role,
           {
             title: typeof req.body.title === "string" ? req.body.title : "",
             description:

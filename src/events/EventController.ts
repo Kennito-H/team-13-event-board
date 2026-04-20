@@ -14,12 +14,14 @@ export interface IEventController {
     res: Response,
     eventId: string,
     userId: string,
+    userRole: UserRole,
   ): Promise<void>;
 
   updateEventFromForm(
     res: Response,
     eventId: string,
     userId: string,
+    userRole: UserRole,
     form: {
       title: string;
       description: string;
@@ -97,8 +99,9 @@ class EventController implements IEventController {
     res: Response,
     eventId: string,
     userId: string,
+    userRole: UserRole,
   ): Promise<void> {
-    const result = await this.eventService.getEventById(eventId, userId);
+    const result = await this.eventService.getEditableEventById(eventId, userId, userRole,);
 
     if (result.ok === false) {
       const error: EventError = result.value;
@@ -119,6 +122,15 @@ class EventController implements IEventController {
         return;
       }
 
+      if (error.name === "InvalidStateError") {
+        res.status(400).render("partials/error", {
+          message: error.message,
+          layout: false,
+        });
+        return;
+      }
+
+
       res.status(500).render("partials/error", {
         message: "Unexpected server error.",
         layout: false,
@@ -138,6 +150,7 @@ class EventController implements IEventController {
     res: Response,
     eventId: string,
     userId: string,
+    userRole: UserRole,
     form: {
       title: string;
       description: string;
@@ -158,7 +171,7 @@ class EventController implements IEventController {
       endDateTime: new Date(form.endDateTime),
     };
 
-    const result = await this.eventService.updateEvent(eventId, updates, userId);
+    const result = await this.eventService.updateEvent(eventId, updates, userId, userRole,);
 
     if (result.ok === false) {
       const error: EventError = result.value;
@@ -507,8 +520,7 @@ class EventController implements IEventController {
       return;
     }
 
-    const newEvent = result.value;
-    res.redirect(`/events/${newEvent.id}/edit`);
+    res.redirect("/events");
   }
 
 
