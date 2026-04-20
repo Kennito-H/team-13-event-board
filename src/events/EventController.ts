@@ -122,6 +122,15 @@ class EventController implements IEventController {
         return;
       }
 
+      if (error.name === "InvalidStateError") {
+        res.status(400).render("partials/error", {
+          message: error.message,
+          layout: false,
+        });
+        return;
+      }
+
+
       res.status(500).render("partials/error", {
         message: "Unexpected server error.",
         layout: false,
@@ -511,8 +520,7 @@ class EventController implements IEventController {
       return;
     }
 
-    const newEvent = result.value;
-    res.redirect(`/events/${newEvent.id}/edit`);
+    res.redirect("/events");
   }
 
 
