@@ -131,4 +131,94 @@ describe("Event transition endpoints", () => {
     expect(savedEvent).not.toBeNull();
     expect(savedEvent?.status).toBe("cancelled");
   });
+
+  async function loginAsStaff() {
+    const agent = request.agent(app);
+
+    await agent
+        .post("/login")
+        .type("form")
+        .send({
+        email: "staff@app.test",
+        password: "password123",
+        })
+        .expect(302);
+
+    return agent;
+    }
+
+    it("returns 403 when a non-owner user tries to publish another user's draft event", async () => {
+    const otherUsersDraftEvent: Event = {
+        id: "event-publish-forbidden",
+        title: "Staff Draft Event",
+        description: "Only the organizer should publish this",
+        location: "Campus Center",
+        category: "Social",
+        capacity: 20,
+        status: "draft",
+        startDateTime: new Date("2026-04-28T18:00:00.000Z"),
+        endDateTime: new Date("2026-04-28T20:00:00.000Z"),
+        organizerId: "user-staff",
+        createdAt: new Date("2026-04-04T12:00:00.000Z"),
+        updatedAt: new Date("2026-04-04T12:00:00.000Z"),
+    };
+
+    await eventRepository.save(otherUsersDraftEvent);
+
+    const agent = await loginAsUser();
+
+    const response = await agent
+        .post(`/events/${otherUsersDraftEvent.id}/publish`)
+        .expect(403);
+
+    expect(response.text).toContain("Only the organizer can publish this event.");
+    });
+
+    it("returns 404 when publishing an event that does not exist", async () => {
+    const agent = await loginAsUser();
+
+    const response = await agent
+        .post("/events/does-not-exist/publish")
+        .expect(404);
+
+    expect(response.text).toContain("Event does not exist.");
+    });
+
+    it("returns 403 when a non-owner non-admin tries to cancel another user's published event", async () => {
+    const staffPublishedEvent: Event = {
+        id: "event-cancel-forbidden",
+        title: "Staff Published Event",
+        description: "Only the organizer or admin should cancel this",
+        location: "Library",
+        category: "Meeting",
+        capacity: 50,
+        status: "published",
+        startDateTime: new Date("2026-04-29T18:00:00.000Z"),
+        endDateTime: new Date("2026-04-29T20:00:00.000Z"),
+        organizerId: "user-staff",
+        createdAt: new Date("2026-04-05T12:00:00.000Z"),
+        updatedAt: new Date("2026-04-05T12:00:00.000Z"),
+    };
+
+    await eventRepository.save(staffPublishedEvent);
+
+    const agent = await loginAsUser();
+
+    const response = await agent
+        .post(`/events/${staffPublishedEvent.id}/cancel`)
+        .expect(403);
+
+    expect(response.text).toContain("Only the organizer or an admin can cancel this event.");
+    });
+
+    it("returns 404 when cancelling an event that does not exist", async () => {
+    const agent = await loginAsAdmin();
+
+    const response = await agent
+        .post("/events/does-not-exist/cancel")
+        .expect(404);
+
+    expect(response.text).toContain("Event does not exist.");
+    });
+
 });
