@@ -65,4 +65,62 @@ describe("Event editing endpoints", () => {
     expect(savedEvent?.category).toBe("Workshop");
     expect(savedEvent?.capacity).toBe(40);
   });
+
+  async function loginAsUser() {
+    const agent = request.agent(app);
+
+    await agent
+        .post("/login")
+        .type("form")
+        .send({
+        email: "user@app.test",
+        password: "password123",
+        })
+        .expect(302);
+
+    return agent;
+    }
+
+    it("returns 403 when a member tries to edit an event", async () => {
+    const agent = await loginAsUser();
+
+    const response = await agent
+        .post(`/events/${seededEvent.id}/edit`)
+        .type("form")
+        .send({
+        title: "NA",
+        description: "NA",
+        location: "NA",
+        category: "NA",
+        capacity: "10",
+        startDateTime: "2026-04-25T19:00",
+        endDateTime: "2026-04-25T21:00",
+        })
+        .expect(403);
+
+    expect(response.text).toContain("Only the organizer or an admin can edit this event.");
+    });
+
+    it("returns 404 when editing an event that does not exist", async () => {
+    const agent = await loginAsAdmin();
+
+    const response = await agent
+        .post("/events/does-not-exist/edit")
+        .type("form")
+        .send({
+        title: "NA",
+        description: "NA",
+        location: "NA",
+        category: "NA",
+        capacity: "10",
+        startDateTime: "2026-04-25T19:00",
+        endDateTime: "2026-04-25T21:00",
+        })
+        .expect(404);
+
+    expect(response.text).toContain("Event does not exist.");
+    });
+
 });
+
+
