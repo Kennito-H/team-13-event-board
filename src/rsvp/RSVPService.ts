@@ -3,14 +3,7 @@ import type { RSVP } from './RSVP';
 import type { RSVPRepository } from './RSVPRepository';
 import type { IEventRepository } from '../repository/EventRepository';
 import type { Event } from '../events/Event';
-import { InvalidRSVPStateError, UnauthorizedError } from './errors';
-
-class EventNotFoundError extends Error {
-  constructor(message = 'Event not found') {
-    super(message);
-    this.name = 'EventNotFoundError';
-  }
-}
+import { EventNotFoundError, InvalidRSVPStateError, UnauthorizedError } from './errors';
 
 export interface RSVPWithEvent {
   rsvp: RSVP;

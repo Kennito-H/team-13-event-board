@@ -1,3 +1,10 @@
+export class EventNotFoundError extends Error {
+  constructor(message = 'Event not found') {
+    super(message);
+    this.name = 'EventNotFoundError';
+  }
+}
+
 export class RSVPNotFoundError extends Error {
     constructor(message = 'RSVP not found') {
       super(message);
