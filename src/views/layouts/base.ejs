@@ -23,7 +23,8 @@
             <a href="/events" class="text-blue-700 font-semibold no-underline hover:underline">Events</a>
             <% if (locals.session.authenticatedUser.role === "user") { %>
               <a href="/my-rsvps" class="text-blue-700 font-semibold no-underline hover:underline">My RSVPs</a>
-            <% } %>            
+            <% } %>    
+              <a href="/dashboard" class="text-blue-700 font-semibold no-underline hover:underline">Dashboard</a>
             <% if (locals.session.authenticatedUser.role === "admin") { %>
               <a href="/admin/users" class="text-blue-700 font-semibold no-underline hover:underline">Manage Users</a>
             <% } %>
