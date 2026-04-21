@@ -333,6 +333,12 @@ class EventController implements IEventController {
     session: IAppBrowserSession,
     query: { category?: string; timeframe?: string },
   ): Promise<void> {
+
+    const transitionResult = await this.eventService.transitionExpiredEvents();
+    if (transitionResult.ok === true && transitionResult.value > 0) {
+      this.logger.info(`Archived ${transitionResult.value} expired event(s) on event list load.`);
+    }
+
     const filters: EventFilters = {};
 
     if (query.category && query.category.trim().length > 0) {
