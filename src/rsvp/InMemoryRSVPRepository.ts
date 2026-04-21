@@ -2,8 +2,8 @@ import type { RSVP, CreateRSVPInput } from './RSVP';
 import type { RSVPRepository } from './RSVPRepository';
 
 export class InMemoryRSVPRepository implements RSVPRepository {
-  private rsvps: Map<string, RSVP> = new Map();
-  private currentId = 1;
+  rsvps: Map<string, RSVP> = new Map();
+  currentId = 1;
 
   async findByEventAndUser(eventId: string, userId: string): Promise<RSVP | null> {
     for (const rsvp of this.rsvps.values()) {
@@ -79,4 +79,20 @@ export class InMemoryRSVPRepository implements RSVPRepository {
     return earliest;
   }
 
+}
+
+let rsvpRepositoryInstance: InMemoryRSVPRepository | null = null;
+
+export function CreateInMemoryRSVPRepository(seedRSVPs: RSVP[] = []): InMemoryRSVPRepository {
+  if (rsvpRepositoryInstance === null) {
+    rsvpRepositoryInstance = new InMemoryRSVPRepository();
+    for (const rsvp of seedRSVPs) {
+      rsvpRepositoryInstance.rsvps.set(rsvp.id, rsvp);
+      rsvpRepositoryInstance.currentId = Math.max(
+        rsvpRepositoryInstance.currentId,
+        Number(rsvp.id) + 1,
+      );
+    }
+  }
+  return rsvpRepositoryInstance;
 }

@@ -35,12 +35,16 @@ export class RSVPController {
 
     // For HTMX requests return the button partial; otherwise redirect to the event page
     if (req.get('HX-Request') === 'true') {
-        res.render('rsvp/partials/rsvp-button', {
-          rsvp: result.value,
-          eventId,
-          layout: false,
-        });
-      } else {
+      const htmxTarget = req.get('HX-Target') ?? '';
+      const partial = htmxTarget.startsWith('rsvp-actions-')
+        ? 'rsvp/partials/rsvp-actions'
+        : 'rsvp/partials/rsvp-button';
+      res.render(partial, {
+        rsvp: result.value,
+        eventId,
+        layout: false,
+      });
+    } else {
         res.redirect(`/events/${eventId}`);
       }
   }
