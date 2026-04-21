@@ -1,3 +1,4 @@
+import type { RSVPRepository } from '../rsvp/RSVPRepository';
 import type { Response } from "express";
 import type { ILoggingService } from "../service/LoggingService";
 import type { IEventService, EventFilters, CreateEventInput } from "./EventService";
@@ -102,6 +103,7 @@ class EventController implements IEventController {
   constructor(
     private readonly eventService: IEventService,
     private readonly logger: ILoggingService,
+    private readonly rsvpRepository?: RSVPRepository,
   ) {}
 
   async showEditEventPage(
@@ -557,7 +559,10 @@ class EventController implements IEventController {
       return;
     }
   
-    res.render("events/detail", { event: result.value, session, rsvpError: rsvpError ?? null });
+    const rsvp = userId && this.rsvpRepository
+      ? await this.rsvpRepository.findByEventAndUser(eventId, userId)
+      : null;
+    res.render("events/detail", { event: result.value, session, rsvpError: rsvpError ?? null, rsvp });
   }
   
 
@@ -591,6 +596,8 @@ class EventController implements IEventController {
 export function CreateEventController(
   eventService: IEventService,
   logger: ILoggingService,
+  rsvpRepository?: RSVPRepository,
 ): IEventController {
-  return new EventController(eventService, logger);
+  return new EventController(eventService, logger, rsvpRepository);
 }
+
