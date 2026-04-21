@@ -494,7 +494,7 @@ class EventController implements IEventController {
     res: Response,
     session: IAppBrowserSession,
   ): Promise<void> {
-    res.render("events/create", { pageError: null });
+    res.render("events/create", { pageError: null, session });
   }
 
   async createEventFromForm(
