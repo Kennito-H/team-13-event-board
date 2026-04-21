@@ -1,7 +1,8 @@
 import { Result, Ok, Err } from '../lib/result';
 import type { RSVP } from './RSVP';
 import type { RSVPRepository } from './RSVPRepository';
-import type { EventRepositoryStub, EventStub } from './StubEventRepository';
+import type { IEventRepository } from '../repository/EventRepository';
+import type { Event } from '../events/Event';
 import { InvalidRSVPStateError, UnauthorizedError } from './errors';
 
 class EventNotFoundError extends Error {
@@ -13,7 +14,7 @@ class EventNotFoundError extends Error {
 
 export interface RSVPWithEvent {
   rsvp: RSVP;
-  event: EventStub;
+  event: Event;
 }
 
 export interface IRSVPService {
@@ -26,7 +27,7 @@ export interface IRSVPService {
 export class RSVPService implements IRSVPService{
   constructor(
     private rsvpRepo: RSVPRepository,
-    private eventRepo: EventRepositoryStub,
+    private eventRepo: IEventRepository,
   ) {}
 
   async toggleRSVP(
@@ -38,6 +39,11 @@ export class RSVPService implements IRSVPService{
     if (!event) {
       return Err(new EventNotFoundError('Event not found'));
     }
+
+    if (event.organizerId === userId) {
+      return Err(new InvalidRSVPStateError('Organizers cannot RSVP to their own events'));
+    }
+    
 
     if (event.status !== 'published') {
       return Err(new InvalidRSVPStateError('Event is not published'));

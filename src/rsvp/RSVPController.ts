@@ -20,12 +20,18 @@ export class RSVPController {
 
     if (result.ok === false) {
       const errorMessage = result.value.message;
-      res.status(result.value instanceof InvalidRSVPStateError ? 400 : 404).render('partials/error', {
-        message: errorMessage,
-        layout: false,
-      });
+      if (req.get('HX-Request') === 'true') {
+        res.status(result.value instanceof InvalidRSVPStateError ? 400 : 404).render('partials/error', {
+          message: errorMessage,
+          layout: false,
+        });
+      } else {
+        res.redirect(`/events/${eventId}?rsvpError=${encodeURIComponent(errorMessage)}`);
+      }
       return;
     }
+    
+    
 
     // For HTMX requests return the button partial; otherwise redirect to the event page
     if (req.get('HX-Request') === 'true') {

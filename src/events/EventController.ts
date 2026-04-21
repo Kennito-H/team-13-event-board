@@ -92,6 +92,7 @@ export interface IEventController {
     eventId: string,
     userId?: string,
     session?: IAppBrowserSession,
+    rsvpError?: string | null,
   ): Promise<void>;
   
 
@@ -538,6 +539,7 @@ class EventController implements IEventController {
     eventId: string,
     userId?: string,
     session?: IAppBrowserSession,
+    rsvpError?: string | null,
   ): Promise<void> {
     const result = await this.eventService.getEventById(eventId, userId);
   
@@ -555,7 +557,7 @@ class EventController implements IEventController {
       return;
     }
   
-    res.render("events/detail", { event: result.value, session });
+    res.render("events/detail", { event: result.value, session, rsvpError: rsvpError ?? null });
   }
   
 
