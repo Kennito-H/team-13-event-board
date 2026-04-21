@@ -87,6 +87,14 @@ export interface IEventController {
     },
   ): Promise<void>;
 
+  showEventDetailPage(
+    res: Response,
+    eventId: string,
+    userId?: string,
+    session?: IAppBrowserSession,
+  ): Promise<void>;
+  
+
 }
 
 class EventController implements IEventController {
@@ -520,8 +528,36 @@ class EventController implements IEventController {
       return;
     }
 
-    res.redirect("/events");
+    const newEvent = result.value;
+    res.redirect(`/events/${newEvent.id}/edit`);
+
   }
+
+  async showEventDetailPage(
+    res: Response,
+    eventId: string,
+    userId?: string,
+    session?: IAppBrowserSession,
+  ): Promise<void> {
+    const result = await this.eventService.getEventById(eventId, userId);
+  
+    if (result.ok === false) {
+      const error = result.value;
+      if (error.name === "NotFoundError") {
+        res.status(404).render("partials/error", { message: error.message, layout: false });
+        return;
+      }
+      if (error.name === "UnauthorizedError") {
+        res.status(403).render("partials/error", { message: error.message, layout: false });
+        return;
+      }
+      res.status(500).render("partials/error", { message: "Unexpected server error.", layout: false });
+      return;
+    }
+  
+    res.render("events/detail", { event: result.value, session });
+  }
+  
 
 
   private endOfWeek(date: Date): Date {

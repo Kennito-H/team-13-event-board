@@ -291,6 +291,33 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.get(
+      "/events/new",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+        const browserSession = recordPageView(sessionStore(req));
+        await this.eventController.showCreateEventPage(res, browserSession);
+      }),
+    );
+
+    this.app.get(
+      "/events/:id",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        const currentUser = getAuthenticatedUser(sessionStore(req));
+        const browserSession = recordPageView(sessionStore(req));
+        await this.eventController.showEventDetailPage(
+          res,
+          typeof req.params.id === "string" ? req.params.id : "",
+          currentUser?.userId,
+          browserSession,
+        );
+      }),
+    );    
+    
+
         // ── Event editing routes ─────────────────────────────────────────
 
     this.app.get(
@@ -439,29 +466,6 @@ class ExpressApp implements IApp {
       }),
     );
 
-    
-    // ── Error handler ────────────────────────────────────────────────
-
-    this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
-      const message = err instanceof Error ? err.message : "Unexpected server error.";
-      this.logger.error(message);
-      res.status(500).render("partials/error", {
-        message: "Unexpected server error.",
-        layout: false,
-      });
-    });
-    
-    this.app.get(
-      "/events/new",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) {
-          return;
-        }
-        const browserSession = recordPageView(sessionStore(req));
-        await this.eventController.showCreateEventPage(res, browserSession);
-      }),
-    );
-
     this.app.post(
       "/events",
       asyncHandler(async (req, res) => {
@@ -517,6 +521,20 @@ class ExpressApp implements IApp {
         });
       }),
     );
+    
+    // ── Error handler ────────────────────────────────────────────────
+
+    this.app.use((err: unknown, _req: Request, res: Response, _next: (value?: unknown) => void) => {
+      const message = err instanceof Error ? err.message : "Unexpected server error.";
+      this.logger.error(message);
+      res.status(500).render("partials/error", {
+        message: "Unexpected server error.",
+        layout: false,
+      });
+    });
+    
+
+
   }
 
   getExpressApp(): express.Express {
