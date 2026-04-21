@@ -597,7 +597,7 @@ class EventController implements IEventController {
       }),
     );
 
-    res.render('events/dashboard', { eventsWithCounts, session });
+    res.render('events/orgDashboard', { eventsWithCounts, session });
   }
   
   private endOfWeek(date: Date): Date {
