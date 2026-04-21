@@ -81,6 +81,12 @@ export interface IEventService {
 
   createEvent(input: CreateEventInput): Promise<Result<Event, EventError>>;
 
+  getOrganizerEvents(
+    userId: string,
+    userRole: UserRole,
+  ): Promise<Result<Event[], EventError>>;
+
+
 }
 
 class EventService implements IEventService {
@@ -360,6 +366,19 @@ class EventService implements IEventService {
     const savedEvent = await this.eventRepository.save(newEvent);
     return Ok(savedEvent);
   }
+
+  async getOrganizerEvents(
+    userId: string,
+    userRole: UserRole,
+  ): Promise<Result<Event[], EventError>> {
+    if (userRole === 'admin') {
+      const events = await this.eventRepository.findAll();
+      return Ok(events);
+    }
+    const events = await this.eventRepository.findByOrganizer(userId);
+    return Ok(events);
+  }
+
 
 
   private validateUpdateInput(updates: UpdateEventInput): EventError | null {

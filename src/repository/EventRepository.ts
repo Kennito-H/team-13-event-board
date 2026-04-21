@@ -7,4 +7,5 @@ export interface IEventRepository {
   findAll(): Promise<Event[]>;
   findByStatus(status: EventStatus): Promise<Event[]>;
   updateStatus(id: string, status: EventStatus): Promise<Event | null>;
+  findByOrganizer(organizerId: string): Promise<Event[]>;
 }

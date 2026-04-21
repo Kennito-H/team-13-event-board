@@ -35,6 +35,12 @@ class InMemoryEventRepository implements IEventRepository {
     this.events.set(id, this.clone(updated));
     return this.clone(updated);
   }
+  async findByOrganizer(organizerId: string): Promise<Event[]> {
+    return Array.from(this.events.values())
+      .filter((e) => e.organizerId === organizerId)
+      .map((e) => this.clone(e));
+  }
+
 
   private clone(event: Event): Event {
     return {
