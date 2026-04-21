@@ -313,7 +313,9 @@ class ExpressApp implements IApp {
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser?.userId,
           browserSession,
+          typeof req.query.rsvpError === "string" ? req.query.rsvpError : null,
         );
+
       }),
     );    
     
