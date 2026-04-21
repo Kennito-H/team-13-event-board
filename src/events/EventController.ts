@@ -95,6 +95,14 @@ export interface IEventController {
     session?: IAppBrowserSession,
     rsvpError?: string | null,
   ): Promise<void>;
+
+  showOrganizerDashboard(
+    res: Response,
+    userId: string,
+    userRole: UserRole,
+    session?: IAppBrowserSession,
+  ): Promise<void>;
+
   
 
 }
@@ -564,9 +572,34 @@ class EventController implements IEventController {
       : null;
     res.render("events/detail", { event: result.value, session, rsvpError: rsvpError ?? null, rsvp });
   }
+
+  async showOrganizerDashboard(
+    res: Response,
+    userId: string,
+    userRole: UserRole,
+    session?: IAppBrowserSession,
+  ): Promise<void> {
+    const result = await this.eventService.getOrganizerEvents(userId, userRole);
+
+    if (result.ok === false) {
+      res.status(500).render('partials/error', { message: 'Unexpected server error.', layout: false });
+      return;
+    }
+
+    const events = result.value;
+
+    const eventsWithCounts = await Promise.all(
+      events.map(async (event) => {
+        const going = this.rsvpRepository
+          ? await this.rsvpRepository.countActiveByEvent(event.id)
+          : 0;
+        return { event, going };
+      }),
+    );
+
+    res.render('events/dashboard', { eventsWithCounts, session });
+  }
   
-
-
   private endOfWeek(date: Date): Date {
     const d = new Date(date);
     const day = d.getDay(); // 0 = Sunday
