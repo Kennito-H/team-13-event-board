@@ -258,6 +258,28 @@ class ExpressApp implements IApp {
     );
 
     this.app.get(
+      "/dashboard",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+
+        const currentUser = getAuthenticatedUser(sessionStore(req));
+        if (!currentUser) {
+          res.redirect('/login');
+          return;
+        }
+
+        const browserSession = recordPageView(sessionStore(req));
+        await this.eventController.showOrganizerDashboard(
+          res,
+          currentUser.userId,
+          currentUser.role,
+          browserSession,
+        );
+      }),
+    );
+
+
+    this.app.get(
       "/events/search",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) return;
