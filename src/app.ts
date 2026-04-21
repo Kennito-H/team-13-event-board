@@ -258,28 +258,6 @@ class ExpressApp implements IApp {
     );
 
     this.app.get(
-      "/dashboard",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
-
-        const currentUser = getAuthenticatedUser(sessionStore(req));
-        if (!currentUser) {
-          res.redirect('/login');
-          return;
-        }
-
-        const browserSession = recordPageView(sessionStore(req));
-        await this.eventController.showOrganizerDashboard(
-          res,
-          currentUser.userId,
-          currentUser.role,
-          browserSession,
-        );
-      }),
-    );
-
-
-    this.app.get(
       "/events/search",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) return;
@@ -335,9 +313,7 @@ class ExpressApp implements IApp {
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser?.userId,
           browserSession,
-          typeof req.query.rsvpError === "string" ? req.query.rsvpError : null,
         );
-
       }),
     );    
     
@@ -360,11 +336,13 @@ class ExpressApp implements IApp {
           return;
         }
 
+        const browserSession = recordPageView(sessionStore(req));
         await this.eventController.showEditEventPage(
           res,
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
           currentUser.role,
+          browserSession,
         );
       }),
     );

@@ -16,6 +16,7 @@ export interface IEventController {
     eventId: string,
     userId: string,
     userRole: UserRole,
+    session?: IAppBrowserSession,
   ): Promise<void>;
 
   updateEventFromForm(
@@ -119,6 +120,7 @@ class EventController implements IEventController {
     eventId: string,
     userId: string,
     userRole: UserRole,
+    session?: IAppBrowserSession,
   ): Promise<void> {
     const result = await this.eventService.getEditableEventById(eventId, userId, userRole,);
 
@@ -162,6 +164,7 @@ class EventController implements IEventController {
     res.render("events/edit", {
       event,
       pageError: null,
+      session
     });
   }
 
