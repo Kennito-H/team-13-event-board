@@ -49,12 +49,80 @@ describe('RSVPService: waitlist promotion on cancel', () => {
   });
 
   it('promotes the earliest waitlisted member when an attending member cancels', async () => {
+    const going = seedRSVP(rsvpRepo, {
+      eventId: event.id,
+      userId: 'user-going',
+      status: 'going',
+      createdAt: new Date('2027-01-01T10:00:00.000Z'),
+    });
+
+    const firstWaitlisted = seedRSVP(rsvpRepo, {
+      eventId: event.id,
+      userId: 'user-waitlist-1',
+      status: 'waitlisted',
+      createdAt: new Date('2027-01-01T11:00:00.000Z'),
+    });
+
+    seedRSVP(rsvpRepo, {
+      eventId: event.id,
+      userId: 'user-waitlist-2',
+      status: 'waitlisted',
+      createdAt: new Date('2027-01-01T12:00:00.000Z'),
+    });
+
+    const result = await service.cancelRSVPWithPromotion(going.id, 'user-going');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.cancelled.status).toBe('cancelled');
+    expect(result.value.promoted?.id).toBe(firstWaitlisted.id);
+    expect(result.value.promoted?.status).toBe('going');
   });
 
   it('does not promote anyone when the waitlist is empty', async () => {
+    const going = seedRSVP(rsvpRepo, {
+      eventId: event.id,
+      userId: 'user-going',
+      status: 'going',
+      createdAt: new Date('2027-01-01T10:00:00.000Z'),
+    });
+
+    const result = await service.cancelRSVPWithPromotion(going.id, 'user-going');
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.cancelled.status).toBe('cancelled');
+    expect(result.value.promoted).toBeUndefined();
   });
 
   it('promotes only one person per cancellation (the earliest waitlisted)', async () => {
+    const going = seedRSVP(rsvpRepo, {
+      eventId: event.id,
+      userId: 'user-going',
+      status: 'going',
+      createdAt: new Date('2027-01-01T10:00:00.000Z'),
+    });
+
+    const first = seedRSVP(rsvpRepo, {
+      eventId: event.id,
+      userId: 'user-waitlist-1',
+      status: 'waitlisted',
+      createdAt: new Date('2027-01-01T11:00:00.000Z'),
+    });
+    
+    const second = seedRSVP(rsvpRepo, {
+      eventId: event.id,
+      userId: 'user-waitlist-2',
+      status: 'waitlisted',
+      createdAt: new Date('2027-01-01T12:00:00.000Z'),
+    });
+
+    await service.cancelRSVPWithPromotion(going.id, 'user-going');
+
+    const firstAfter = await rsvpRepo.findById(first.id);
+    const secondAfter = await rsvpRepo.findById(second.id);
+    expect(firstAfter?.status).toBe('going');
+    expect(secondAfter?.status).toBe('waitlisted');
   });
 });
 
