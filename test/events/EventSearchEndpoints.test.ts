@@ -155,5 +155,43 @@ describe("Event search endpoints", () => {
     expect(response.text).not.toContain("Old JavaScript Meetup");
   });
 
+  it("returns 400 when query exceeds 200 characters", async () => {
+    const agent = await loginAsUser();
+    const longQuery = "a".repeat(201);
+    const response = await agent
+      .get(`/events/search?q=${longQuery}`)
+      .expect(400);
+ 
+    expect(response.text).toContain("too long");
+  });
+
+  it("redirects unauthenticated users to login", async () => {
+    const response = await request(app).get("/events/search").expect(302);
+    expect(response.headers.location).toBe("/login");
+  });
+
+  it("returns a partial response when HX-Request header is set", async () => {
+    const agent = await loginAsUser();
+    const response = await agent
+      .get("/events/search?q=JavaScript")
+      .set("HX-Request", "true")
+      .expect(200);
+ 
+    // Partial should contain result content but not the full page layout
+    expect(response.text).toContain("JavaScript Study Group");
+    expect(response.text).not.toContain("<html");
+    expect(response.text).not.toContain("<nav");
+  });
+ 
+  it("returns partial with empty state when HTMX query matches nothing", async () => {
+    const agent = await loginAsUser();
+    const response = await agent
+      .get("/events/search?q=zzznomatch")
+      .set("HX-Request", "true")
+      .expect(200);
+ 
+    expect(response.text).not.toContain("JavaScript Study Group");
+    expect(response.text).not.toContain("<html");
+  });
 
 });
