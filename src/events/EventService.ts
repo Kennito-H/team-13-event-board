@@ -77,7 +77,7 @@ export interface IEventService {
   
   listEvents(
     filters: EventFilters
-  ): Promise<Result<Event[], never>>;
+  ): Promise<Result<Event[], EventError>>;
 
   createEvent(input: CreateEventInput): Promise<Result<Event, EventError>>;
 
@@ -408,7 +408,11 @@ class EventService implements IEventService {
     return null;
   }
 
-  async listEvents(filters: EventFilters): Promise<Result<Event[], never>> {
+  async listEvents(filters: EventFilters): Promise<Result<Event[], EventError>> {
+    if (filters.category && filters.category.length > 100) {
+      return Err(ValidationError("Category filter is too long (max 100 characters)."));
+    }
+
     const published = await this.eventRepository.findByStatus("published");
 
     const filtered = published.filter((event) => {
