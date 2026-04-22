@@ -29,10 +29,11 @@ export interface GetArchivedEventsInput {
   category?: string;
 }
  
+export type Timeframe = "upcoming" | "this-week" | "this-weekend";
+
 export interface EventFilters {
   category?: string;
-  startDate?: Date;
-  endDate?: Date;
+  timeframe?: string;
 }
 
 export interface IEventService {
@@ -413,16 +414,60 @@ class EventService implements IEventService {
       return Err(ValidationError("Category filter is too long (max 100 characters)."));
     }
 
+    const allowedTimeframes: Timeframe[] = ["upcoming", "this-week", "this-weekend"];
+    if (filters.timeframe && !allowedTimeframes.includes(filters.timeframe as Timeframe)) {
+      return Err(ValidationError(`Unknown timeframe: "${filters.timeframe}".`));
+    }
+
+    const now = new Date();
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
+    if (filters.timeframe === "this-week") {
+      startDate = now;
+      endDate = this.endOfWeek(now);
+    } else if (filters.timeframe === "this-weekend") {
+      startDate = this.startOfUpcomingSaturday(now);
+      endDate = this.endOfUpcomingSunday(now);
+    } else if (filters.timeframe === "upcoming") {
+      startDate = now;
+    }
+
     const published = await this.eventRepository.findByStatus("published");
 
     const filtered = published.filter((event) => {
       if (filters.category && event.category !== filters.category) return false;
-      if (filters.startDate && event.startDateTime < filters.startDate) return false;
-      if (filters.endDate && event.startDateTime > filters.endDate) return false;
+      if (startDate && event.startDateTime < startDate) return false;
+      if (endDate && event.startDateTime > endDate) return false;
       return true;
     });
 
     return Ok(this.sortByDateAsc(filtered));
+  }
+
+  private endOfWeek(date: Date): Date {
+    const d = new Date(date);
+    const day = d.getDay();
+    const daysUntilSunday = (7 - day) % 7;
+    d.setDate(d.getDate() + daysUntilSunday);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
+
+  private startOfUpcomingSaturday(date: Date): Date {
+    const d = new Date(date);
+    const day = d.getDay();
+    const daysUntilSaturday = (6 - day + 7) % 7;
+    d.setDate(d.getDate() + daysUntilSaturday);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  private endOfUpcomingSunday(date: Date): Date {
+    const d = this.startOfUpcomingSaturday(date);
+    d.setDate(d.getDate() + 1);
+    d.setHours(23, 59, 59, 999);
+    return d;
   }
 
 }

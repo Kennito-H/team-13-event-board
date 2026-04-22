@@ -339,23 +339,26 @@ class EventController implements IEventController {
       filters.category = query.category.trim();
     }
 
-    const now = new Date();
-    if (query.timeframe === "this-week") {
-      filters.startDate = now;
-      filters.endDate = this.endOfWeek(now);
-    } else if (query.timeframe === "this-weekend") {
-      filters.startDate = this.startOfUpcomingSaturday(now);
-      filters.endDate = this.endOfUpcomingSunday(now);
-    } else if (query.timeframe === "upcoming") {
-      filters.startDate = now;
+    if (query.timeframe && query.timeframe.trim().length > 0) {
+      filters.timeframe = query.timeframe.trim();
     }
 
     const result = await this.eventService.listEvents(filters);
-    const events = result.value;
+
+    if (result.ok === false) {
+      res.status(400).render("events/list", {
+        session,
+        events: [],
+        selectedCategory: query.category ?? "",
+        selectedTimeframe: query.timeframe ?? "",
+        pageError: result.value.message,
+      });
+      return;
+    }
 
     res.render("events/list", {
       session,
-      events,
+      events: result.value,
       selectedCategory: query.category ?? "",
       selectedTimeframe: query.timeframe ?? "",
       pageError: null,
@@ -556,33 +559,6 @@ class EventController implements IEventController {
     }
   
     res.render("events/detail", { event: result.value, session });
-  }
-  
-
-
-  private endOfWeek(date: Date): Date {
-    const d = new Date(date);
-    const day = d.getDay(); // 0 = Sunday
-    const daysUntilSunday = (7 - day) % 7;
-    d.setDate(d.getDate() + daysUntilSunday);
-    d.setHours(23, 59, 59, 999);
-    return d;
-  }
-
-  private startOfUpcomingSaturday(date: Date): Date {
-    const d = new Date(date);
-    const day = d.getDay();
-    const daysUntilSaturday = (6 - day + 7) % 7;
-    d.setDate(d.getDate() + daysUntilSaturday);
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }
-
-  private endOfUpcomingSunday(date: Date): Date {
-    const d = this.startOfUpcomingSaturday(date);
-    d.setDate(d.getDate() + 1);
-    d.setHours(23, 59, 59, 999);
-    return d;
   }
 }
 
