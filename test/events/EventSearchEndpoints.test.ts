@@ -141,4 +141,19 @@ describe("Event search endpoints", () => {
     expect(response.text).not.toContain("Spring Hiking Trip");
   });
 
+  it("never returns draft events in search results", async () => {
+    const agent = await loginAsStaff();
+    const response = await agent.get("/events/search?q=Secret Draft").expect(200);
+ 
+    expect(response.text).not.toContain("Secret Draft Event");
+  });
+ 
+  it("never returns past events even when query matches", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/search?q=Old JavaScript").expect(200);
+ 
+    expect(response.text).not.toContain("Old JavaScript Meetup");
+  });
+
+
 });
