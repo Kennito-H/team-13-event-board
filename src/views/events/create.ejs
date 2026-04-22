@@ -16,7 +16,12 @@
   </div>
 </section>
 
-<% if (pageError) { %>
+<%- include("partials/create-form", {
+  form: typeof form !== 'undefined' ? form : {},
+  pageError: typeof pageError !== 'undefined' ? pageError : null
+}) %>
+
+<!-- <% if (pageError) { %>
   <%- include("../partials/error", { message: pageError }) %>
 <% } %>
 
@@ -127,4 +132,4 @@
       </button>
     </div>
   </form>
-</section>
+</section> -->

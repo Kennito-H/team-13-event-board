@@ -528,6 +528,7 @@ class ExpressApp implements IApp {
             startDateTime: typeof req.body.startDateTime === "string" ? req.body.startDateTime : "",
             endDateTime: typeof req.body.endDateTime === "string" ? req.body.endDateTime : "",
           },
+          this.isHtmxRequest(req), //
         );
       }),
     );

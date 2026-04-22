@@ -88,6 +88,7 @@ export interface IEventController {
       startDateTime: string;
       endDateTime: string;
     },
+    isHtmx: boolean, //
   ): Promise<void>;
 
   showEventDetailPage(
@@ -534,6 +535,7 @@ class EventController implements IEventController {
       startDateTime: string;
       endDateTime: string;
     },
+    isHtmx: boolean,
   ): Promise<void> {
     const result = await this.eventService.createEvent({
       title: form.title,
@@ -551,7 +553,15 @@ class EventController implements IEventController {
       this.logger.warn(`Failed to create event: ${error.message}`);
 
       if (error.name === "ValidationError") {
-        res.status(400).render("events/create", {
+        if (isHtmx) {
+        res.status(400).render("events/partials/create-form", {
+          form,
+          pageError: error.message,
+          layout: false,
+        });
+        return;
+      }
+      res.status(400).render("events/create", {
           session,
           form,
           pageError: error.message,
@@ -559,15 +569,20 @@ class EventController implements IEventController {
         return;
       }
 
-      res.status(500).render("partials/error", {
-        message: "Unexpected server error.",
-        layout: false,
+    res.status(500).render("partials/error", {
+      message: "Unexpected server error.",
+      layout: false,
       });
       return;
     }
 
     const newEvent = result.value;
-    res.redirect(`/events/${newEvent.id}/edit`);
+    if (isHtmx) {
+      res.setHeader("HX-Redirect", `/events/${newEvent.id}`);
+      res.status(200).end();
+      return;
+    }
+    res.redirect(`/events/${newEvent.id}`);
 
   }
 
@@ -582,12 +597,8 @@ class EventController implements IEventController {
   
     if (result.ok === false) {
       const error = result.value;
-      if (error.name === "NotFoundError") {
-        res.status(404).render("partials/error", { message: error.message, layout: false });
-        return;
-      }
-      if (error.name === "UnauthorizedError") {
-        res.status(403).render("partials/error", { message: error.message, layout: false });
+      if (error.name === "NotFoundError" || error.name === "UnauthorizedError") {
+        res.status(404).render("partials/error", { message: "Event not found.", layout: false });
         return;
       }
       res.status(500).render("partials/error", { message: "Unexpected server error.", layout: false });
@@ -597,7 +608,10 @@ class EventController implements IEventController {
     const rsvp = userId && this.rsvpRepository
       ? await this.rsvpRepository.findByEventAndUser(eventId, userId)
       : null;
-    res.render("events/detail", { event: result.value, session, rsvpError: rsvpError ?? null, rsvp });
+    const event = result.value;
+    const isOrganizer = userId !== undefined && event.organizerId === userId;
+    const isAdmin = session?.authenticatedUser?.role === "admin";
+    res.render("events/detail", { event, session, isOrganizer, isAdmin, rsvpError: rsvpError ?? null, rsvp });
   }
 
   async showOrganizerDashboard(
