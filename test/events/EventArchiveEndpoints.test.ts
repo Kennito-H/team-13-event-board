@@ -36,7 +36,7 @@ describe("Event archive endpoints", () => {
     createdAt: past(45),
     updatedAt: past(30),
   };
-  
+
   const expiredPublishedEvent: Event = {
     id: "archive-expired-published",
     title: "Expired Published Event",
@@ -98,5 +98,43 @@ describe("Event archive endpoints", () => {
       .expect(302);
     return agent;
   }
+
+    it("returns all past events when no category filter is applied", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/archive").expect(200);
+ 
+    expect(response.text).toContain("Winter Code Sprint");
+    expect(response.text).toContain("Holiday Potluck Dinner");
+  });
+ 
+  it("filters archive by category", async () => {
+    const agent = await loginAsUser();
+    const response = await agent
+      .get("/events/archive?category=Technology")
+      .expect(200);
+ 
+    expect(response.text).toContain("Winter Code Sprint");
+    expect(response.text).not.toContain("Holiday Potluck Dinner");
+  });
+ 
+  it("returns empty state when category filter matches nothing", async () => {
+    const agent = await loginAsUser();
+    const response = await agent
+      .get("/events/archive?category=Underwater Basket Weaving")
+      .expect(200);
+ 
+    expect(response.text).not.toContain("Winter Code Sprint");
+    expect(response.text).not.toContain("Holiday Potluck Dinner");
+  });
+ 
+  it("category filter is case-insensitive", async () => {
+    const agent = await loginAsUser();
+    const response = await agent
+      .get("/events/archive?category=technology")
+      .expect(200);
+ 
+    expect(response.text).toContain("Winter Code Sprint");
+  });
+
 
 });
