@@ -24,6 +24,7 @@ export interface IEventController {
     eventId: string,
     userId: string,
     userRole: UserRole,
+    isHtmx: boolean,
     form: {
       title: string;
       description: string;
@@ -173,6 +174,7 @@ class EventController implements IEventController {
     eventId: string,
     userId: string,
     userRole: UserRole,
+    isHtmx: boolean,
     form: {
       title: string;
       description: string;
@@ -217,24 +219,35 @@ class EventController implements IEventController {
       }
 
       if (
-        error.name === "ValidationError" ||
-        error.name === "InvalidStateError"
-      ) {
-        res.status(400).render("events/edit", {
-          event: {
-            id: eventId,
-            title: form.title,
-            description: form.description,
-            location: form.location,
-            category: form.category,
-            capacity: form.capacity,
-            startDateTime: form.startDateTime,
-            endDateTime: form.endDateTime,
-          },
-          pageError: error.message,
+      error.name === "ValidationError" ||
+      error.name === "InvalidStateError"
+    ) {
+      const viewModel = {
+        event: {
+          id: eventId,
+          title: form.title,
+          description: form.description,
+          location: form.location,
+          category: form.category,
+          capacity: form.capacity,
+          startDateTime: form.startDateTime,
+          endDateTime: form.endDateTime,
+        },
+        pageError: error.message,
+        successMessage: null,
+      };
+
+      if (isHtmx) {
+        res.status(400).render("events/partials/edit-form-panel", {
+          ...viewModel,
+          layout: false,
         });
         return;
       }
+
+      res.status(400).render("events/edit", viewModel);
+      return;
+    }
 
       res.status(500).render("partials/error", {
         message: "Unexpected server error.",
@@ -244,7 +257,18 @@ class EventController implements IEventController {
     }
 
     const updatedEvent: Event = result.value;
+    if (isHtmx) {
+      res.render("events/partials/edit-form-panel", {
+        event: updatedEvent,
+        pageError: null,
+        successMessage: "Changes saved.",
+        layout: false,
+      });
+      return;
+    }
+
     res.redirect(`/events/${updatedEvent.id}`);
+
   }
 
   async publishEventFromForm(
