@@ -93,4 +93,52 @@ describe("Event search endpoints", () => {
       .expect(302);
     return agent;
   }
+
+  it("returns all published upcoming events when query is empty", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/search").expect(200);
+ 
+    expect(response.text).toContain("JavaScript Study Group");
+    expect(response.text).toContain("Spring Hiking Trip");
+  });
+ 
+  it("returns matching events when query matches title", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/search?q=JavaScript").expect(200);
+ 
+    expect(response.text).toContain("JavaScript Study Group");
+    expect(response.text).not.toContain("Spring Hiking Trip");
+  });
+ 
+  it("returns matching events when query matches description", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/search?q=beginner-friendly").expect(200);
+ 
+    expect(response.text).toContain("Spring Hiking Trip");
+    expect(response.text).not.toContain("JavaScript Study Group");
+  });
+ 
+  it("returns matching events when query matches location", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/search?q=Amherst").expect(200);
+ 
+    expect(response.text).toContain("Spring Hiking Trip");
+    expect(response.text).not.toContain("JavaScript Study Group");
+  });
+ 
+  it("search is case-insensitive", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/search?q=javascript").expect(200);
+ 
+    expect(response.text).toContain("JavaScript Study Group");
+  });
+ 
+  it("returns empty state when query matches nothing", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/search?q=zzznomatch").expect(200);
+ 
+    expect(response.text).not.toContain("JavaScript Study Group");
+    expect(response.text).not.toContain("Spring Hiking Trip");
+  });
+
 });
