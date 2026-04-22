@@ -10,7 +10,14 @@
 <% } %>
 
 <section class="border border-slate-200 rounded-2xl bg-white shadow-lg overflow-hidden">
-  <form method="POST" action="/events/<%= event.id %>/edit" class="p-6 md:p-8">
+  <form
+    method="POST"
+    action="/events/<%= event.id %>/edit"
+    hx-post="/events/<%= event.id %>/edit"
+    hx-target="#edit-form-panel"
+    hx-swap="outerHTML"
+    class="p-6 md:p-8"
+  >
     <div class="grid gap-5 md:grid-cols-2">
       <label class="flex flex-col gap-1.5 md:col-span-2">
         <span class="text-sm font-medium text-slate-700">Title</span>
