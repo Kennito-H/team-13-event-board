@@ -238,7 +238,7 @@ class EventController implements IEventController {
       };
 
       if (isHtmx) {
-        res.status(400).render("events/partials/edit-form-panel", {
+        res.render("events/partials/edit-form-panel", {
           ...viewModel,
           layout: false,
         });
