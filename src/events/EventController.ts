@@ -40,6 +40,7 @@ export interface IEventController {
     res: Response,
     eventId: string,
     userId: string,
+    isHtmx: boolean,
   ): Promise<void>;
 
   cancelEventFromForm(
@@ -47,6 +48,7 @@ export interface IEventController {
     eventId: string,
     userId: string,
     userRole: UserRole,
+    isHtmx: boolean,
   ): Promise<void>;
 
   showEventList(
@@ -272,10 +274,28 @@ class EventController implements IEventController {
 
   }
 
+  private renderDetailActions(
+    res: Response,
+    event: Event,
+    options?: {
+      transitionError?: string | null;
+      rsvpError?: string | null;
+    },
+  ): void {
+    res.render("events/partials/detail-actions", {
+      event,
+      rsvp: null,
+      rsvpError: options?.rsvpError ?? null,
+      transitionError: options?.transitionError ?? null,
+      layout: false,
+    });
+  }
+
   async publishEventFromForm(
     res: Response,
     eventId: string,
     userId: string,
+    isHtmx: boolean,
   ): Promise<void> {
     const result = await this.eventService.publishEvent(eventId, userId);
 
@@ -283,6 +303,20 @@ class EventController implements IEventController {
       const error: EventError = result.value;
 
       this.logger.warn(`Failed to publish event ${eventId}: ${error.message}`);
+
+      if (isHtmx && (
+        error.name === "UnauthorizedError" ||
+        error.name === "InvalidStateError"
+      )) {
+        const currentEvent = await this.eventService.getEventById(eventId, userId);
+
+        if (currentEvent.ok === true) {
+          this.renderDetailActions(res, currentEvent.value, {
+            transitionError: error.message,
+          });
+          return;
+        }
+      }
 
       if (error.name === "NotFoundError") {
         res.status(404).render("partials/error", {
@@ -316,14 +350,24 @@ class EventController implements IEventController {
     }
 
     const publishedEvent: Event = result.value;
+
+    if (isHtmx) {
+      this.renderDetailActions(res, publishedEvent, {
+        transitionError: null,
+      });
+      return;
+    }
+
     res.redirect(`/events/${publishedEvent.id}`);
   }
+
 
   async cancelEventFromForm(
     res: Response,
     eventId: string,
     userId: string,
     userRole: UserRole,
+    isHtmx: boolean,
   ): Promise<void> {
     const result = await this.eventService.cancelEvent(eventId, userId, userRole);
 
@@ -331,6 +375,20 @@ class EventController implements IEventController {
       const error: EventError = result.value;
 
       this.logger.warn(`Failed to cancel event ${eventId}: ${error.message}`);
+
+      if (isHtmx && (
+        error.name === "UnauthorizedError" ||
+        error.name === "InvalidStateError"
+      )) {
+        const currentEvent = await this.eventService.getEventById(eventId, userId);
+
+        if (currentEvent.ok === true) {
+          this.renderDetailActions(res, currentEvent.value, {
+            transitionError: error.message,
+          });
+          return;
+        }
+      }
 
       if (error.name === "NotFoundError") {
         res.status(404).render("partials/error", {
@@ -364,8 +422,17 @@ class EventController implements IEventController {
     }
 
     const cancelledEvent: Event = result.value;
+
+    if (isHtmx) {
+      this.renderDetailActions(res, cancelledEvent, {
+        transitionError: null,
+      });
+      return;
+    }
+
     res.redirect(`/events/${cancelledEvent.id}`);
   }
+
 
   async showEventList(
     res: Response,

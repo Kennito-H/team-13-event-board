@@ -442,6 +442,7 @@ class ExpressApp implements IApp {
           res,
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
+          this.isHtmxRequest(req),
         );
       }),
     );
@@ -467,6 +468,7 @@ class ExpressApp implements IApp {
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
           currentUser.role,
+          this.isHtmxRequest(req),
         );
       }),
     );
