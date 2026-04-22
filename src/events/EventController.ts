@@ -50,6 +50,7 @@ export interface IEventController {
     res: Response,
     session: IAppBrowserSession,
     query: { category?: string; timeframe?: string },
+    isHtmx: boolean,
   ): Promise<void>;
 
   showSearchPage(
@@ -332,6 +333,7 @@ class EventController implements IEventController {
     res: Response,
     session: IAppBrowserSession,
     query: { category?: string; timeframe?: string },
+    isHtmx: boolean,
   ): Promise<void> {
     const filters: EventFilters = {};
 
@@ -346,12 +348,29 @@ class EventController implements IEventController {
     const result = await this.eventService.listEvents(filters);
 
     if (result.ok === false) {
+      if (isHtmx) {
+        res.status(400).render("events/partials/list-results", {
+          events: [],
+          pageError: result.value.message,
+          layout: false,
+        });
+        return;
+      }
       res.status(400).render("events/list", {
         session,
         events: [],
         selectedCategory: query.category ?? "",
         selectedTimeframe: query.timeframe ?? "",
         pageError: result.value.message,
+      });
+      return;
+    }
+
+    if (isHtmx) {
+      res.render("events/partials/list-results", {
+        events: result.value,
+        pageError: null,
+        layout: false,
       });
       return;
     }

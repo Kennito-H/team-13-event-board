@@ -515,10 +515,12 @@ class ExpressApp implements IApp {
         }
 
         const browserSession = recordPageView(sessionStore(req));
-        await this.eventController.showEventList(res, browserSession, {
-          category: typeof req.query.category === "string" ? req.query.category : undefined,
-          timeframe: typeof req.query.timeframe === "string" ? req.query.timeframe : undefined,
-        });
+        await this.eventController.showEventList(res,browserSession, {
+            category: typeof req.query.category === "string" ? req.query.category : undefined,
+            timeframe: typeof req.query.timeframe === "string" ? req.query.timeframe : undefined,
+          },
+          this.isHtmxRequest(req),
+        );
       }),
     );
     
