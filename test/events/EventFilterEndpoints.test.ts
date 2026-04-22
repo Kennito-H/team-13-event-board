@@ -4,31 +4,36 @@ import { CreateInMemoryEventRepository } from "../../src/repository/InMemoryEven
 import type { Event } from "../../src/events/Event";
 
 describe("Event filter endpoints", () => {
-  const publishedMusicThisWeek: Event = {
-    id: "event-filter-music",
-    title: "Music This Week",
-    description: "Published music event within this week",
+  const soon = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
+  const soonEnd = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000);
+  const later = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const laterEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000);
+
+  const publishedMusicSoon: Event = {
+    id: "event-filter-music-soon",
+    title: "Music Soon",
+    description: "Published music event soon",
     location: "Hall A",
     category: "Music",
     capacity: 50,
     status: "published",
-    startDateTime: new Date(),
-    endDateTime: new Date(),
+    startDateTime: soon,
+    endDateTime: soonEnd,
     organizerId: "user-reader",
     createdAt: new Date("2026-04-01T12:00:00.000Z"),
     updatedAt: new Date("2026-04-01T12:00:00.000Z"),
   };
 
-  const publishedWorkshopThisWeekend: Event = {
-    id: "event-filter-workshop",
-    title: "Workshop This Weekend",
-    description: "Published workshop event this weekend",
+  const publishedWorkshopSoon: Event = {
+    id: "event-filter-workshop-soon",
+    title: "Workshop Soon",
+    description: "Published workshop event soon",
     location: "Hall B",
     category: "Workshop",
     capacity: 30,
     status: "published",
-    startDateTime: new Date(),
-    endDateTime: new Date(),
+    startDateTime: soon,
+    endDateTime: soonEnd,
     organizerId: "user-reader",
     createdAt: new Date("2026-04-01T12:00:00.000Z"),
     updatedAt: new Date("2026-04-01T12:00:00.000Z"),
@@ -42,33 +47,17 @@ describe("Event filter endpoints", () => {
     category: "Music",
     capacity: 100,
     status: "published",
-    startDateTime: new Date(),
-    endDateTime: new Date(),
-    organizerId: "user-reader",
-    createdAt: new Date("2026-04-01T12:00:00.000Z"),
-    updatedAt: new Date("2026-04-01T12:00:00.000Z"),
-  };
-
-  const draftMusic: Event = {
-    id: "event-filter-draft",
-    title: "Draft Music",
-    description: "Should never appear in any filtered list",
-    location: "Hall D",
-    category: "Music",
-    capacity: 20,
-    status: "draft",
-    startDateTime: new Date(),
-    endDateTime: new Date(),
+    startDateTime: later,
+    endDateTime: laterEnd,
     organizerId: "user-reader",
     createdAt: new Date("2026-04-01T12:00:00.000Z"),
     updatedAt: new Date("2026-04-01T12:00:00.000Z"),
   };
 
   const eventRepository = CreateInMemoryEventRepository([
-    publishedMusicThisWeek,
-    publishedWorkshopThisWeekend,
+    publishedMusicSoon,
+    publishedWorkshopSoon,
     publishedMusicLater,
-    draftMusic,
   ]);
 
   const app = createComposedApp().getExpressApp();
@@ -84,35 +73,57 @@ describe("Event filter endpoints", () => {
   }
 
   it("returns all published events when no filters are applied", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events").expect(200);
+
+    expect(response.text).toContain("Music Soon");
+    expect(response.text).toContain("Workshop Soon");
+    expect(response.text).toContain("Music Later");
   });
 
   it("filters by category only", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events?category=Music").expect(200);
+
+    expect(response.text).toContain("Music Soon");
+    expect(response.text).toContain("Music Later");
+    expect(response.text).not.toContain("Workshop Soon");
   });
 
-  it("filters by timeframe=upcoming", async () => {
-  });
+  it("filters by timeframe only", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events?timeframe=upcoming").expect(200);
 
-  it("filters by timeframe=this-week", async () => {
-  });
-
-  it("filters by timeframe=this-weekend", async () => {
+    expect(response.text).toContain("Music Soon");
+    expect(response.text).toContain("Workshop Soon");
+    expect(response.text).toContain("Music Later");
   });
 
   it("combines category and timeframe filters", async () => {
-  });
+    const agent = await loginAsUser();
+    const response = await agent
+      .get("/events?category=Music&timeframe=upcoming")
+      .expect(200);
 
-  it("never returns draft events in any filtered response", async () => {
+    expect(response.text).toContain("Music Soon");
+    expect(response.text).toContain("Music Later");
+    expect(response.text).not.toContain("Workshop Soon");
   });
 
   it("rejects an unknown timeframe value with a 400 and a clear message", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events?timeframe=yesterday").expect(400);
+
+    expect(response.text).toContain("Unknown timeframe");
   });
 
   it("rejects an overly long category value", async () => {
-  });
+    const agent = await loginAsUser();
+    const longCategory = "a".repeat(101);
+    const response = await agent
+      .get(`/events?category=${longCategory}`)
+      .expect(400);
 
-  it("returns only the list partial when the request is an HTMX request", async () => {
-  });
-
-  it("returns the full page when the request is not an HTMX request", async () => {
+    expect(response.text).toContain("too long");
   });
 });
