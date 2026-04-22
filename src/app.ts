@@ -395,6 +395,7 @@ class ExpressApp implements IApp {
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
           currentUser.role,
+          this.isHtmxRequest(req),
           {
             title: typeof req.body.title === "string" ? req.body.title : "",
             description:
