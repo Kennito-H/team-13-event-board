@@ -1,0 +1,121 @@
+<% if (pageError) { %>
+  <%- include("../../partials/error", { message: pageError }) %>
+<% } %>
+
+<% if (successMessage) { %>
+  <section class="mb-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-800" aria-live="polite">
+    <h3 class="text-base font-semibold mb-1">Saved</h3>
+    <p class="mb-0 text-sm"><%= successMessage %></p>
+  </section>
+<% } %>
+
+<section class="border border-slate-200 rounded-2xl bg-white shadow-lg overflow-hidden">
+  <form method="POST" action="/events/<%= event.id %>/edit" class="p-6 md:p-8">
+    <div class="grid gap-5 md:grid-cols-2">
+      <label class="flex flex-col gap-1.5 md:col-span-2">
+        <span class="text-sm font-medium text-slate-700">Title</span>
+        <input
+          id="title"
+          name="title"
+          type="text"
+          value="<%= event.title ?? '' %>"
+          required
+          class="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-sky-500/20 focus:border-sky-500"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5 md:col-span-2">
+        <span class="text-sm font-medium text-slate-700">Description</span>
+        <textarea
+          id="description"
+          name="description"
+          required
+          rows="5"
+          class="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-sky-500/20 focus:border-sky-500"
+        ><%= event.description ?? '' %></textarea>
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Location</span>
+        <input
+          id="location"
+          name="location"
+          type="text"
+          value="<%= event.location ?? '' %>"
+          required
+          class="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-sky-500/20 focus:border-sky-500"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Category</span>
+        <input
+          id="category"
+          name="category"
+          type="text"
+          value="<%= event.category ?? '' %>"
+          required
+          class="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-sky-500/20 focus:border-sky-500"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Start</span>
+        <input
+          id="startDateTime"
+          name="startDateTime"
+          type="datetime-local"
+          value="<%= event.startDateTime ? new Date(event.startDateTime).toISOString().slice(0,16) : '' %>"
+          required
+          class="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-sky-500/20 focus:border-sky-500"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">End</span>
+        <input
+          id="endDateTime"
+          name="endDateTime"
+          type="datetime-local"
+          value="<%= event.endDateTime ? new Date(event.endDateTime).toISOString().slice(0,16) : '' %>"
+          required
+          class="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-sky-500/20 focus:border-sky-500"
+        />
+      </label>
+
+      <label class="flex flex-col gap-1.5">
+        <span class="text-sm font-medium text-slate-700">Capacity</span>
+        <input
+          id="capacity"
+          name="capacity"
+          type="number"
+          min="1"
+          value="<%= event.capacity ?? '' %>"
+          placeholder="Optional"
+          class="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-sky-500/20 focus:border-sky-500"
+        />
+      </label>
+    </div>
+
+    <div class="mt-6 flex items-center justify-end gap-3">
+      <a
+        href="/events"
+        class="px-4 py-2.5 rounded-lg bg-white text-slate-700 border border-slate-300 text-sm font-medium no-underline hover:bg-slate-50"
+      >
+        Cancel
+      </a>
+      <a
+        href="/events/<%= event.id %>"
+        class="px-4 py-2.5 rounded-lg bg-white text-slate-700 border border-slate-300 text-sm font-medium no-underline hover:bg-slate-50"
+      >
+        View & Publish
+      </a>
+      <button
+        type="submit"
+        class="px-5 py-2.5 rounded-lg bg-sky-600 text-white font-medium cursor-pointer hover:bg-sky-700"
+      >
+        Save Changes
+      </button>
+    </div>
+  </form>
+</section>
