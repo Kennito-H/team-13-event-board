@@ -136,5 +136,27 @@ describe("Event archive endpoints", () => {
     expect(response.text).toContain("Winter Code Sprint");
   });
 
+  it("automatically transitions expired published events to past on archive load", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/archive").expect(200);
+
+    expect(response.text).toContain("Expired Published Event");
+  });
+ 
+  it("does not transition future published events to past", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/archive").expect(200);
+
+    expect(response.text).not.toContain("Upcoming Workshop");
+  });
+ 
+  it("does not show cancelled events in the archive", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/archive").expect(200);
+ 
+    expect(response.text).not.toContain("Cancelled Event");
+  });
+
+
 
 });
