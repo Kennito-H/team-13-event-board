@@ -258,6 +258,28 @@ class ExpressApp implements IApp {
     );
 
     this.app.get(
+      "/dashboard",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+
+        const currentUser = getAuthenticatedUser(sessionStore(req));
+        if (!currentUser) {
+          res.redirect('/login');
+          return;
+        }
+
+        const browserSession = recordPageView(sessionStore(req));
+        await this.eventController.showOrganizerDashboard(
+          res,
+          currentUser.userId,
+          currentUser.role,
+          browserSession,
+        );
+      }),
+    );
+
+
+    this.app.get(
       "/events/search",
       asyncHandler(async (req, res) => {
         if (!this.requireAuthenticated(req, res)) return;
@@ -336,11 +358,13 @@ class ExpressApp implements IApp {
           return;
         }
 
+        const browserSession = recordPageView(sessionStore(req));
         await this.eventController.showEditEventPage(
           res,
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
           currentUser.role,
+          browserSession,
         );
       }),
     );
@@ -371,6 +395,7 @@ class ExpressApp implements IApp {
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
           currentUser.role,
+          this.isHtmxRequest(req),
           {
             title: typeof req.body.title === "string" ? req.body.title : "",
             description:
@@ -417,6 +442,7 @@ class ExpressApp implements IApp {
           res,
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
+          this.isHtmxRequest(req),
         );
       }),
     );
@@ -442,6 +468,7 @@ class ExpressApp implements IApp {
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
           currentUser.role,
+          this.isHtmxRequest(req),
         );
       }),
     );
@@ -503,6 +530,7 @@ class ExpressApp implements IApp {
             startDateTime: typeof req.body.startDateTime === "string" ? req.body.startDateTime : "",
             endDateTime: typeof req.body.endDateTime === "string" ? req.body.endDateTime : "",
           },
+          this.isHtmxRequest(req), //
         );
       }),
     );
@@ -515,10 +543,12 @@ class ExpressApp implements IApp {
         }
 
         const browserSession = recordPageView(sessionStore(req));
-        await this.eventController.showEventList(res, browserSession, {
-          category: typeof req.query.category === "string" ? req.query.category : undefined,
-          timeframe: typeof req.query.timeframe === "string" ? req.query.timeframe : undefined,
-        });
+        await this.eventController.showEventList(res,browserSession, {
+            category: typeof req.query.category === "string" ? req.query.category : undefined,
+            timeframe: typeof req.query.timeframe === "string" ? req.query.timeframe : undefined,
+          },
+          this.isHtmxRequest(req),
+        );
       }),
     );
     

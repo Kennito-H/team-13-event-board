@@ -1,0 +1,18 @@
+<div id="rsvp-actions-<%= rsvp.id %>" class="flex items-center gap-3 shrink-0">
+    <% if (rsvp.status === 'going') { %>
+      <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Going</span>
+    <% } else if (rsvp.status === 'waitlisted') { %>
+      <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Waitlisted</span>
+    <% } else { %>
+      <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">Cancelled</span>
+    <% } %>
+    <form method="POST" action="/events/<%= eventId %>/rsvp" class="m-0"
+          hx-post="/events/<%= eventId %>/rsvp"
+          hx-target="#rsvp-actions-<%= rsvp.id %>"
+          hx-swap="outerHTML">
+      <button type="submit" class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer">
+        <%= rsvp.status === 'cancelled' ? 'Re-RSVP' : 'Cancel RSVP' %>
+      </button>
+    </form>
+  </div>
+  

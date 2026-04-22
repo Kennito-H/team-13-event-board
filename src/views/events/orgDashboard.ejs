@@ -1,0 +1,61 @@
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+    <h1 class="text-3xl font-bold text-slate-900 mb-1">Organizer Dashboard</h1>
+    <p class="text-slate-500">Events you are organizing.</p>
+  </section>
+  
+  <% if (eventsWithCounts.length === 0) { %>
+    <section class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg text-center">
+      <p class="text-slate-500 mb-4">You have not created any events yet.</p>
+      <a href="/events/new" class="px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium no-underline hover:bg-blue-700">
+        Create an Event
+      </a>
+    </section>
+  <% } else { %>
+    <section class="border border-slate-200 rounded-2xl bg-white shadow-lg overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-200">
+          <tr>
+            <th class="text-left px-5 py-3 font-semibold text-slate-700">Event</th>
+            <th class="text-left px-5 py-3 font-semibold text-slate-700">Status</th>
+            <th class="text-left px-5 py-3 font-semibold text-slate-700">Going</th>
+            <th class="text-left px-5 py-3 font-semibold text-slate-700">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100">
+          <% for (const { event, going } of eventsWithCounts) { %>
+            <tr class="hover:bg-slate-50">
+              <td class="px-5 py-4">
+                <a href="/events/<%= event.id %>" class="font-medium text-slate-900 hover:text-blue-700 no-underline">
+                  <%= event.title %>
+                </a>
+                <p class="text-xs text-slate-400 mt-0.5"><%= new Date(event.startDateTime).toLocaleDateString() %></p>
+              </td>
+              <td class="px-5 py-4">
+                <span class="px-2.5 py-1 rounded-full text-xs font-semibold
+                  <%= event.status === 'published' ? 'bg-green-100 text-green-700' :
+                      event.status === 'cancelled' ? 'bg-red-100 text-red-700' :
+                      event.status === 'past' ? 'bg-slate-100 text-slate-500' :
+                      'bg-yellow-100 text-yellow-700' %>">
+                  <%= event.status %>
+                </span>
+              </td>
+              <td class="px-5 py-4 text-slate-600">
+                <%= going %>
+              </td>
+              <td class="px-5 py-4">
+                <div class="flex items-center gap-2">
+                  <a href="/events/<%= event.id %>/edit" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50">
+                    Edit
+                  </a>
+                  <a href="/events/<%= event.id %>" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50">
+                    View
+                  </a>
+                </div>
+              </td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </section>
+  <% } %>
+  
