@@ -157,6 +157,57 @@ describe("Event archive endpoints", () => {
     expect(response.text).not.toContain("Cancelled Event");
   });
 
-
-
+    it("returns 400 when category filter exceeds 100 characters", async () => {
+    const agent = await loginAsUser();
+    const longCategory = "a".repeat(101);
+    const response = await agent
+      .get(`/events/archive?category=${longCategory}`)
+      .expect(400);
+ 
+    expect(response.text).toContain("too long");
+  });
+ 
+ 
+  it("redirects unauthenticated users to login", async () => {
+    const response = await request(app).get("/events/archive").expect(302);
+    expect(response.headers.location).toBe("/login");
+  });
+ 
+ 
+  it("returns a partial response when HX-Request header is set", async () => {
+    const agent = await loginAsUser();
+    const response = await agent
+      .get("/events/archive")
+      .set("HX-Request", "true")
+      .expect(200);
+ 
+    expect(response.text).toContain("Winter Code Sprint");
+    expect(response.text).not.toContain("<html");
+    expect(response.text).not.toContain("<nav");
+  });
+ 
+  it("returns filtered partial when HTMX request includes category", async () => {
+    const agent = await loginAsUser();
+    const response = await agent
+      .get("/events/archive?category=Technology")
+      .set("HX-Request", "true")
+      .expect(200);
+ 
+    expect(response.text).toContain("Winter Code Sprint");
+    expect(response.text).not.toContain("Holiday Potluck Dinner");
+    expect(response.text).not.toContain("<html");
+  });
+ 
+ 
+  it("returns past events in reverse chronological order (most recently ended first)", async () => {
+    const agent = await loginAsUser();
+    const response = await agent.get("/events/archive").expect(200);
+ 
+    const winterIdx = response.text.indexOf("Winter Code Sprint");
+    const potluckIdx = response.text.indexOf("Holiday Potluck Dinner");
+ 
+    expect(winterIdx).toBeGreaterThan(-1);
+    expect(potluckIdx).toBeGreaterThan(-1);
+    expect(winterIdx).toBeLessThan(potluckIdx);
+  });
 });
