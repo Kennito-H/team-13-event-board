@@ -80,4 +80,23 @@ describe("Event creation endpoints", () => {
         expect(response.text).toContain("Capacity must be a positive whole number");
     });
 
-})
+    //Role Enforcement
+    it("returns 403 when a member tries to create an event", async () => {
+        const agent = await loginAsUser();
+        const response = await agent.post("/events").type("form").send(validForm).expect(403);
+        expect(response.text).toContain("Only organizers can create events.");
+    });
+
+    it("redirects unauthenticated user away from GET /events/new", async() =>{
+        const response = await request(app).get("/events/new").expect(302);
+        expect(response.headers.location).toBe("/login");
+    });
+
+    //Edge Cases(s)
+    it("trims whitespace from fields and still creates the event", async () =>{
+        const agent = await loginAsStaff();
+        const response = await agent.post("/events").type("form").send({...validForm, title: " Trimmed Title  "}).expect(302);
+        expect(response.headers.location).toMatch(/^\/events\/[a-z0-9-]+$/);
+    });
+
+});
