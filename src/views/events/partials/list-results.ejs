@@ -1,0 +1,40 @@
+<% if (pageError) { %>
+  <%- include("../../partials/error", { message: pageError }) %>
+<% } else if (events.length === 0) { %>
+  <section class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg text-center">
+    <p class="text-slate-500">No events match the current filters.</p>
+  </section>
+<% } else { %>
+  <p class="text-sm text-slate-500 mb-3">
+    <%= events.length %> event<%= events.length === 1 ? '' : 's' %>
+  </p>
+
+  <ul class="list-none m-0 p-0 grid gap-3.5">
+    <% for (const event of events) { %>
+      <li class="p-5 border border-slate-200 rounded-2xl bg-white shadow-lg">
+        <div class="flex items-center justify-between gap-3 mb-2">
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-600/10 text-blue-700">
+            <%= event.category %>
+          </span>
+          <span class="text-sm text-slate-400">
+            <%= event.startDateTime.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) %>
+            &middot;
+            <%= event.startDateTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) %>
+          </span>
+        </div>
+        <h2 class="text-lg font-semibold text-slate-900 mb-1">
+          <a href="/events/<%= event.id %>" class="text-slate-900 no-underline hover:text-blue-700 hover:underline">
+            <%= event.title %>
+          </a>
+        </h2>
+        <p class="text-sm text-slate-500 mb-2">📍 <%= event.location %></p>
+        <p class="text-sm text-slate-600 leading-relaxed mb-0">
+          <%= event.description.length > 160 ? event.description.slice(0, 157) + '…' : event.description %>
+        </p>
+        <% if (event.capacity) { %>
+          <p class="text-xs text-slate-400 mt-2 mb-0">Capacity: <%= event.capacity %></p>
+        <% } %>
+      </li>
+    <% } %>
+  </ul>
+<% } %>

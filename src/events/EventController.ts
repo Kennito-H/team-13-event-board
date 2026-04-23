@@ -1,6 +1,7 @@
+import type { RSVPRepository } from '../rsvp/RSVPRepository';
 import type { Response } from "express";
 import type { ILoggingService } from "../service/LoggingService";
-import type { IEventService, EventFilters } from "./EventService";
+import type { IEventService, EventFilters, CreateEventInput } from "./EventService";
 import type { UpdateEventInput } from "./UpdateEventInput";
 import type { EventError } from "./errors";
 import type { Event } from "./Event";
@@ -8,17 +9,22 @@ import type { UserRole } from "../auth/User";
 import { IAppBrowserSession } from "../session/AppSession";
 
 
+
 export interface IEventController {
   showEditEventPage(
     res: Response,
     eventId: string,
     userId: string,
+    userRole: UserRole,
+    session?: IAppBrowserSession,
   ): Promise<void>;
 
   updateEventFromForm(
     res: Response,
     eventId: string,
     userId: string,
+    userRole: UserRole,
+    isHtmx: boolean,
     form: {
       title: string;
       description: string;
@@ -34,6 +40,7 @@ export interface IEventController {
     res: Response,
     eventId: string,
     userId: string,
+    isHtmx: boolean,
   ): Promise<void>;
 
   cancelEventFromForm(
@@ -41,11 +48,14 @@ export interface IEventController {
     eventId: string,
     userId: string,
     userRole: UserRole,
+    isHtmx: boolean,
   ): Promise<void>;
 
   showEventList(
     res: Response,
+    session: IAppBrowserSession,
     query: { category?: string; timeframe?: string },
+    isHtmx: boolean,
   ): Promise<void>;
 
   showSearchPage(
@@ -60,21 +70,64 @@ export interface IEventController {
     session: IAppBrowserSession,
     category: string,
     isHtmx: boolean,
+
   ): Promise<void>;
+
+    showCreateEventPage(
+    res: Response,
+    session: IAppBrowserSession,
+  ): Promise<void>;
+
+  createEventFromForm(
+    res: Response,
+    session: IAppBrowserSession,
+    userId: string,
+    form: {
+      title: string;
+      description: string;
+      location: string;
+      category: string;
+      capacity?: number;
+      startDateTime: string;
+      endDateTime: string;
+    },
+    isHtmx: boolean, //
+  ): Promise<void>;
+
+  showEventDetailPage(
+    res: Response,
+    eventId: string,
+    userId?: string,
+    session?: IAppBrowserSession,
+    rsvpError?: string | null,
+  ): Promise<void>;
+
+  showOrganizerDashboard(
+    res: Response,
+    userId: string,
+    userRole: UserRole,
+    session?: IAppBrowserSession,
+  ): Promise<void>;
+
+  
+
 }
 
 class EventController implements IEventController {
   constructor(
     private readonly eventService: IEventService,
     private readonly logger: ILoggingService,
+    private readonly rsvpRepository?: RSVPRepository,
   ) {}
 
   async showEditEventPage(
     res: Response,
     eventId: string,
     userId: string,
+    userRole: UserRole,
+    session?: IAppBrowserSession,
   ): Promise<void> {
-    const result = await this.eventService.getEventById(eventId, userId);
+    const result = await this.eventService.getEditableEventById(eventId, userId, userRole,);
 
     if (result.ok === false) {
       const error: EventError = result.value;
@@ -95,6 +148,15 @@ class EventController implements IEventController {
         return;
       }
 
+      if (error.name === "InvalidStateError") {
+        res.status(400).render("partials/error", {
+          message: error.message,
+          layout: false,
+        });
+        return;
+      }
+
+
       res.status(500).render("partials/error", {
         message: "Unexpected server error.",
         layout: false,
@@ -107,6 +169,7 @@ class EventController implements IEventController {
     res.render("events/edit", {
       event,
       pageError: null,
+      session
     });
   }
 
@@ -114,6 +177,8 @@ class EventController implements IEventController {
     res: Response,
     eventId: string,
     userId: string,
+    userRole: UserRole,
+    isHtmx: boolean,
     form: {
       title: string;
       description: string;
@@ -134,7 +199,7 @@ class EventController implements IEventController {
       endDateTime: new Date(form.endDateTime),
     };
 
-    const result = await this.eventService.updateEvent(eventId, updates, userId);
+    const result = await this.eventService.updateEvent(eventId, updates, userId, userRole,);
 
     if (result.ok === false) {
       const error: EventError = result.value;
@@ -158,24 +223,35 @@ class EventController implements IEventController {
       }
 
       if (
-        error.name === "ValidationError" ||
-        error.name === "InvalidStateError"
-      ) {
-        res.status(400).render("events/edit", {
-          event: {
-            id: eventId,
-            title: form.title,
-            description: form.description,
-            location: form.location,
-            category: form.category,
-            capacity: form.capacity,
-            startDateTime: form.startDateTime,
-            endDateTime: form.endDateTime,
-          },
-          pageError: error.message,
+      error.name === "ValidationError" ||
+      error.name === "InvalidStateError"
+    ) {
+      const viewModel = {
+        event: {
+          id: eventId,
+          title: form.title,
+          description: form.description,
+          location: form.location,
+          category: form.category,
+          capacity: form.capacity,
+          startDateTime: form.startDateTime,
+          endDateTime: form.endDateTime,
+        },
+        pageError: error.message,
+        successMessage: null,
+      };
+
+      if (isHtmx) {
+        res.render("events/partials/edit-form-panel", {
+          ...viewModel,
+          layout: false,
         });
         return;
       }
+
+      res.status(400).render("events/edit", viewModel);
+      return;
+    }
 
       res.status(500).render("partials/error", {
         message: "Unexpected server error.",
@@ -185,13 +261,42 @@ class EventController implements IEventController {
     }
 
     const updatedEvent: Event = result.value;
+    if (isHtmx) {
+      res.render("events/partials/edit-form-panel", {
+        event: updatedEvent,
+        pageError: null,
+        successMessage: "Changes saved.",
+        layout: false,
+      });
+      return;
+    }
+
     res.redirect(`/events/${updatedEvent.id}`);
+
+  }
+
+  private renderDetailActions(
+    res: Response,
+    event: Event,
+    options?: {
+      transitionError?: string | null;
+      rsvpError?: string | null;
+    },
+  ): void {
+    res.render("events/partials/detail-actions", {
+      event,
+      rsvp: null,
+      rsvpError: options?.rsvpError ?? null,
+      transitionError: options?.transitionError ?? null,
+      layout: false,
+    });
   }
 
   async publishEventFromForm(
     res: Response,
     eventId: string,
     userId: string,
+    isHtmx: boolean,
   ): Promise<void> {
     const result = await this.eventService.publishEvent(eventId, userId);
 
@@ -199,6 +304,20 @@ class EventController implements IEventController {
       const error: EventError = result.value;
 
       this.logger.warn(`Failed to publish event ${eventId}: ${error.message}`);
+
+      if (isHtmx && (
+        error.name === "UnauthorizedError" ||
+        error.name === "InvalidStateError"
+      )) {
+        const currentEvent = await this.eventService.getEventById(eventId, userId);
+
+        if (currentEvent.ok === true) {
+          this.renderDetailActions(res, currentEvent.value, {
+            transitionError: error.message,
+          });
+          return;
+        }
+      }
 
       if (error.name === "NotFoundError") {
         res.status(404).render("partials/error", {
@@ -232,14 +351,24 @@ class EventController implements IEventController {
     }
 
     const publishedEvent: Event = result.value;
+
+    if (isHtmx) {
+      this.renderDetailActions(res, publishedEvent, {
+        transitionError: null,
+      });
+      return;
+    }
+
     res.redirect(`/events/${publishedEvent.id}`);
   }
+
 
   async cancelEventFromForm(
     res: Response,
     eventId: string,
     userId: string,
     userRole: UserRole,
+    isHtmx: boolean,
   ): Promise<void> {
     const result = await this.eventService.cancelEvent(eventId, userId, userRole);
 
@@ -247,6 +376,20 @@ class EventController implements IEventController {
       const error: EventError = result.value;
 
       this.logger.warn(`Failed to cancel event ${eventId}: ${error.message}`);
+
+      if (isHtmx && (
+        error.name === "UnauthorizedError" ||
+        error.name === "InvalidStateError"
+      )) {
+        const currentEvent = await this.eventService.getEventById(eventId, userId);
+
+        if (currentEvent.ok === true) {
+          this.renderDetailActions(res, currentEvent.value, {
+            transitionError: error.message,
+          });
+          return;
+        }
+      }
 
       if (error.name === "NotFoundError") {
         res.status(404).render("partials/error", {
@@ -280,12 +423,23 @@ class EventController implements IEventController {
     }
 
     const cancelledEvent: Event = result.value;
+
+    if (isHtmx) {
+      this.renderDetailActions(res, cancelledEvent, {
+        transitionError: null,
+      });
+      return;
+    }
+
     res.redirect(`/events/${cancelledEvent.id}`);
   }
 
+
   async showEventList(
     res: Response,
+    session: IAppBrowserSession,
     query: { category?: string; timeframe?: string },
+    isHtmx: boolean,
   ): Promise<void> {
     const filters: EventFilters = {};
 
@@ -293,22 +447,43 @@ class EventController implements IEventController {
       filters.category = query.category.trim();
     }
 
-    const now = new Date();
-    if (query.timeframe === "this-week") {
-      filters.startDate = now;
-      filters.endDate = this.endOfWeek(now);
-    } else if (query.timeframe === "this-weekend") {
-      filters.startDate = this.startOfUpcomingSaturday(now);
-      filters.endDate = this.endOfUpcomingSunday(now);
-    } else if (query.timeframe === "upcoming") {
-      filters.startDate = now;
+    if (query.timeframe && query.timeframe.trim().length > 0) {
+      filters.timeframe = query.timeframe.trim();
     }
 
     const result = await this.eventService.listEvents(filters);
-    const events = result.value;
+
+    if (result.ok === false) {
+      if (isHtmx) {
+        res.status(400).render("events/partials/list-results", {
+          events: [],
+          pageError: result.value.message,
+          layout: false,
+        });
+        return;
+      }
+      res.status(400).render("events/list", {
+        session,
+        events: [],
+        selectedCategory: query.category ?? "",
+        selectedTimeframe: query.timeframe ?? "",
+        pageError: result.value.message,
+      });
+      return;
+    }
+
+    if (isHtmx) {
+      res.render("events/partials/list-results", {
+        events: result.value,
+        pageError: null,
+        layout: false,
+      });
+      return;
+    }
 
     res.render("events/list", {
-      events,
+      session,
+      events: result.value,
       selectedCategory: query.category ?? "",
       selectedTimeframe: query.timeframe ?? "",
       pageError: null,
@@ -429,35 +604,138 @@ class EventController implements IEventController {
     });
   }
 
-  private endOfWeek(date: Date): Date {
-    const d = new Date(date);
-    const day = d.getDay(); // 0 = Sunday
-    const daysUntilSunday = (7 - day) % 7;
-    d.setDate(d.getDate() + daysUntilSunday);
-    d.setHours(23, 59, 59, 999);
-    return d;
+  async showCreateEventPage(
+    res: Response,
+    session: IAppBrowserSession,
+  ): Promise<void> {
+    res.render("events/create", { pageError: null, session });
   }
 
-  private startOfUpcomingSaturday(date: Date): Date {
-    const d = new Date(date);
-    const day = d.getDay();
-    const daysUntilSaturday = (6 - day + 7) % 7;
-    d.setDate(d.getDate() + daysUntilSaturday);
-    d.setHours(0, 0, 0, 0);
-    return d;
+  async createEventFromForm(
+    res: Response,
+    session: IAppBrowserSession,
+    userId: string,
+    form: {
+      title: string;
+      description: string;
+      location: string;
+      category: string;
+      capacity?: number;
+      startDateTime: string;
+      endDateTime: string;
+    },
+    isHtmx: boolean,
+  ): Promise<void> {
+    const result = await this.eventService.createEvent({
+      title: form.title,
+      description: form.description,
+      location: form.location,
+      category: form.category,
+      capacity: form.capacity,
+      startDateTime: new Date(form.startDateTime),
+      endDateTime: new Date(form.endDateTime),
+      organizerId: userId,
+    });
+
+    if (result.ok === false) {
+      const error = result.value;
+      this.logger.warn(`Failed to create event: ${error.message}`);
+
+      if (error.name === "ValidationError") {
+        if (isHtmx) {
+        res.status(400).render("events/partials/create-form", {
+          form,
+          pageError: error.message,
+          layout: false,
+        });
+        return;
+      }
+      res.status(400).render("events/create", {
+          session,
+          form,
+          pageError: error.message,
+        });
+        return;
+      }
+
+    res.status(500).render("partials/error", {
+      message: "Unexpected server error.",
+      layout: false,
+      });
+      return;
+    }
+
+    const newEvent = result.value;
+    if (isHtmx) {
+      res.setHeader("HX-Redirect", `/events/${newEvent.id}`);
+      res.status(200).end();
+      return;
+    }
+    res.redirect(`/events/${newEvent.id}`);
+
   }
 
-  private endOfUpcomingSunday(date: Date): Date {
-    const d = this.startOfUpcomingSaturday(date);
-    d.setDate(d.getDate() + 1);
-    d.setHours(23, 59, 59, 999);
-    return d;
+  async showEventDetailPage(
+    res: Response,
+    eventId: string,
+    userId?: string,
+    session?: IAppBrowserSession,
+    rsvpError?: string | null,
+  ): Promise<void> {
+    const result = await this.eventService.getEventById(eventId, userId);
+  
+    if (result.ok === false) {
+      const error = result.value;
+      if (error.name === "NotFoundError" || error.name === "UnauthorizedError") {
+        res.status(404).render("partials/error", { message: "Event not found.", layout: false });
+        return;
+      }
+      res.status(500).render("partials/error", { message: "Unexpected server error.", layout: false });
+      return;
+    }
+  
+    const rsvp = userId && this.rsvpRepository
+      ? await this.rsvpRepository.findByEventAndUser(eventId, userId)
+      : null;
+    const event = result.value;
+    const isOrganizer = userId !== undefined && event.organizerId === userId;
+    const isAdmin = session?.authenticatedUser?.role === "admin";
+    res.render("events/detail", { event, session, isOrganizer, isAdmin, rsvpError: rsvpError ?? null, rsvp });
+  }
+
+  async showOrganizerDashboard(
+    res: Response,
+    userId: string,
+    userRole: UserRole,
+    session?: IAppBrowserSession,
+  ): Promise<void> {
+    const result = await this.eventService.getOrganizerEvents(userId, userRole);
+
+    if (result.ok === false) {
+      res.status(500).render('partials/error', { message: 'Unexpected server error.', layout: false });
+      return;
+    }
+
+    const events = result.value;
+
+    const eventsWithCounts = await Promise.all(
+      events.map(async (event) => {
+        const going = this.rsvpRepository
+          ? await this.rsvpRepository.countActiveByEvent(event.id)
+          : 0;
+        return { event, going };
+      }),
+    );
+
+    res.render('events/orgDashboard', { eventsWithCounts, session });
   }
 }
 
 export function CreateEventController(
   eventService: IEventService,
   logger: ILoggingService,
+  rsvpRepository?: RSVPRepository,
 ): IEventController {
-  return new EventController(eventService, logger);
+  return new EventController(eventService, logger, rsvpRepository);
 }
+

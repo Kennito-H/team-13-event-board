@@ -1,5 +1,3 @@
-<%- layout('layouts/base') %>
-
 <section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
   <h1 class="text-3xl font-bold text-slate-900 mb-3">Event Search</h1>
   <p class="text-slate-500">
@@ -8,7 +6,7 @@
 </section>
 
 <% if (pageError) { %>
-  <%- include("partials/error", { message: pageError }) %>
+  <%- include("../partials/error", { message: pageError }) %>
 <% } %>
 
 <section class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg mb-5">
@@ -41,5 +39,5 @@
 </section>
 
 <div id="search-results">
-  <%- include("events/partials/search-results", { events, query, pageError: null }) %>
+  <%- include("partials/search-results", { events, query, pageError: null }) %>
 </div>

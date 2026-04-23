@@ -14,15 +14,26 @@ import type { UserRole } from "../auth/User";
 export interface SearchEventsInput {
   query: string;
 }
+export interface CreateEventInput {
+  title: string;
+  description: string;
+  location: string;
+  category: string;
+  capacity?: number;
+  startDateTime: Date;
+  endDateTime: Date;
+  organizerId: string;
+}
 
 export interface GetArchivedEventsInput {
   category?: string;
 }
  
+export type Timeframe = "upcoming" | "this-week" | "this-weekend";
+
 export interface EventFilters {
   category?: string;
-  startDate?: Date;
-  endDate?: Date;
+  timeframe?: string;
 }
 
 export interface IEventService {
@@ -35,6 +46,13 @@ export interface IEventService {
     eventId: string,
     updates: UpdateEventInput,
     userId: string,
+    userRole: UserRole,
+  ): Promise<Result<Event, EventError>>;
+
+  getEditableEventById(
+    eventId: string,
+    userId: string,
+    userRole: UserRole,
   ): Promise<Result<Event, EventError>>;
 
   publishEvent(
@@ -60,7 +78,16 @@ export interface IEventService {
   
   listEvents(
     filters: EventFilters
-  ): Promise<Result<Event[], never>>;
+  ): Promise<Result<Event[], EventError>>;
+
+  createEvent(input: CreateEventInput): Promise<Result<Event, EventError>>;
+
+  getOrganizerEvents(
+    userId: string,
+    userRole: UserRole,
+  ): Promise<Result<Event[], EventError>>;
+
+
 }
 
 class EventService implements IEventService {
@@ -85,10 +112,31 @@ class EventService implements IEventService {
     return Ok(event);
   }
 
+  async getEditableEventById(
+    eventId: string,
+    userId: string,
+    userRole: UserRole,
+  ): Promise<Result<Event, EventError>> {
+    const event = await this.eventRepository.findById(eventId);
+
+    if (!event) {
+      return Err(NotFoundError("Event does not exist."));
+    }
+
+    const editError = this.canEditEvent(event, userId, userRole);
+    if (editError) {
+      return Err(editError);
+    }
+
+    return Ok(event);
+  }
+
+
   async updateEvent(
     eventId: string,
     updates: UpdateEventInput,
     userId: string,
+    userRole: UserRole,
   ): Promise<Result<Event, EventError>> {
     const existingEvent = await this.eventRepository.findById(eventId);
 
@@ -96,22 +144,10 @@ class EventService implements IEventService {
       return Err(NotFoundError("Event does not exist."));
     }
 
-    if (existingEvent.organizerId !== userId) {
-      return Err(UnauthorizedError("Only the organizer can edit this event."));
-    }
-
-    if (
-      existingEvent.status === "published" ||
-      existingEvent.status === "cancelled" ||
-      existingEvent.status === "past"
-    ) {
-      return Err(
-        InvalidStateError(
-          "Published, cancelled, and past events cannot be edited.",
-        ),
-      );
-    }
-    
+    const editError = this.canEditEvent(existingEvent, userId, userRole);
+    if (editError) {
+      return Err(editError);
+    }    
 
     const validationError = this.validateUpdateInput(updates);
     if (validationError) {
@@ -200,22 +236,23 @@ class EventService implements IEventService {
   
 
   async searchEvents(
-    input: SearchEventsInput,
-  ): Promise<Result<Event[], EventError>> {
+  input: SearchEventsInput,
+): Promise<Result<Event[], EventError>> {
+  try {
     const raw = input.query.trim();
- 
+
     if (raw.length > 200) {
       return Err(ValidationError("Search query is too long (max 200 characters)."));
     }
- 
+
     const allPublished = await this.eventRepository.findByStatus("published");
     const now = new Date();
     const upcoming = allPublished.filter((e) => e.startDateTime > now);
- 
+
     if (raw.length === 0) {
       return Ok(this.sortByDateAsc(upcoming));
     }
- 
+
     const lower = raw.toLowerCase();
     const matched = upcoming.filter(
       (e) =>
@@ -223,9 +260,36 @@ class EventService implements IEventService {
         e.description.toLowerCase().includes(lower) ||
         e.location.toLowerCase().includes(lower),
     );
- 
+
     return Ok(this.sortByDateAsc(matched));
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error in searchEvents";
+    return Err(ValidationError(message));
   }
+}
+  private canEditEvent(
+    event: Event,
+    userId: string,
+    userRole: UserRole,
+  ): EventError | null {
+    const isOrganizer = event.organizerId === userId;
+    const isAdmin = userRole === "admin";
+
+    if (!isOrganizer && !isAdmin) {
+      return UnauthorizedError(
+        "Only the organizer or an admin can edit this event.",
+      );
+    }
+
+    if (event.status === "cancelled" || event.status === "past") {
+      return InvalidStateError(
+        "Cancelled and past events cannot be edited.",
+      );
+    }
+
+    return null;
+  }
+
 
   private sortByDateAsc(events: Event[]): Event[] {
     return [...events].sort(
@@ -278,6 +342,46 @@ class EventService implements IEventService {
     return Ok(unique);
   }
 
+  async createEvent(input: CreateEventInput): Promise<Result<Event, EventError>> {
+    const validationError = this.validateUpdateInput(input);
+    if (validationError) {
+      return Err(validationError);
+    }
+
+    const now = new Date();
+    const newEvent: Event = {
+      id: crypto.randomUUID(),
+      title: input.title.trim(),
+      description: input.description.trim(),
+      location: input.location.trim(),
+      category: input.category.trim(),
+      capacity: input.capacity,
+      status: "draft",
+      startDateTime: input.startDateTime,
+      endDateTime: input.endDateTime,
+      organizerId: input.organizerId,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const savedEvent = await this.eventRepository.save(newEvent);
+    return Ok(savedEvent);
+  }
+
+  async getOrganizerEvents(
+    userId: string,
+    userRole: UserRole,
+  ): Promise<Result<Event[], EventError>> {
+    if (userRole === 'admin') {
+      const events = await this.eventRepository.findAll();
+      return Ok(events);
+    }
+    const events = await this.eventRepository.findByOrganizer(userId);
+    return Ok(events);
+  }
+
+
+
   private validateUpdateInput(updates: UpdateEventInput): EventError | null {
     if (!updates.title || updates.title.trim().length === 0) {
       return ValidationError("Title is required.");
@@ -324,18 +428,67 @@ class EventService implements IEventService {
     return null;
   }
 
-  async listEvents(filters: EventFilters): Promise<Result<Event[], never>> {
+  async listEvents(filters: EventFilters): Promise<Result<Event[], EventError>> {
+    if (filters.category && filters.category.length > 100) {
+      return Err(ValidationError("Category filter is too long (max 100 characters)."));
+    }
+
+    const allowedTimeframes: Timeframe[] = ["upcoming", "this-week", "this-weekend"];
+    if (filters.timeframe && !allowedTimeframes.includes(filters.timeframe as Timeframe)) {
+      return Err(ValidationError(`Unknown timeframe: "${filters.timeframe}".`));
+    }
+
+    const now = new Date();
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
+    if (filters.timeframe === "this-week") {
+      startDate = now;
+      endDate = this.endOfWeek(now);
+    } else if (filters.timeframe === "this-weekend") {
+      startDate = this.startOfUpcomingSaturday(now);
+      endDate = this.endOfUpcomingSunday(now);
+    } else if (filters.timeframe === "upcoming") {
+      startDate = now;
+    }
+
     const published = await this.eventRepository.findByStatus("published");
 
     const filtered = published.filter((event) => {
       if (filters.category && event.category !== filters.category) return false;
-      if (filters.startDate && event.startDateTime < filters.startDate) return false;
-      if (filters.endDate && event.startDateTime > filters.endDate) return false;
+      if (startDate && event.startDateTime < startDate) return false;
+      if (endDate && event.startDateTime > endDate) return false;
       return true;
     });
 
     return Ok(this.sortByDateAsc(filtered));
   }
+
+  private endOfWeek(date: Date): Date {
+    const d = new Date(date);
+    const day = d.getDay();
+    const daysUntilSunday = (7 - day) % 7;
+    d.setDate(d.getDate() + daysUntilSunday);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
+
+  private startOfUpcomingSaturday(date: Date): Date {
+    const d = new Date(date);
+    const day = d.getDay();
+    const daysUntilSaturday = (6 - day + 7) % 7;
+    d.setDate(d.getDate() + daysUntilSaturday);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  private endOfUpcomingSunday(date: Date): Date {
+    const d = this.startOfUpcomingSaturday(date);
+    d.setDate(d.getDate() + 1);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
+
 }
 
 export function CreateEventService(

@@ -1,33 +1,62 @@
-<h1><%= event.title %></h1>
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-sky-50 shadow-lg">
+  <div class="flex items-start justify-between gap-3 flex-wrap">
+    <div>
+      <p class="text-sm uppercase tracking-[0.2em] text-sky-700 font-semibold mb-2">Event</p>
+      <h1 class="text-3xl font-bold text-slate-900 mb-3"><%= event.title %></h1>
+      <p class="text-slate-500 max-w-2xl">
+        Review event details, manage publishing and cancellation, and keep attendees informed.
+      </p>
+    </div>
+    <a
+      href="/events"
+      class="px-3.5 py-2 rounded-lg bg-white text-slate-700 border border-slate-200 text-sm font-medium no-underline hover:bg-slate-50"
+    >
+      Back to Events
+    </a>
+  </div>
+</section>
 
-<p><strong>Status:</strong> <%= event.status %></p>
-<p><strong>Description:</strong> <%= event.description %></p>
-<p><strong>Location:</strong> <%= event.location %></p>
-<p><strong>Category:</strong> <%= event.category %></p>
-<p><strong>Capacity:</strong> <%= event.capacity ?? 'No limit' %></p>
-<p><strong>Starts:</strong> <%= new Date(event.startDateTime).toLocaleString() %></p>
-<p><strong>Ends:</strong> <%= new Date(event.endDateTime).toLocaleString() %></p>
+<section class="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
+  <article class="border border-slate-200 rounded-2xl bg-white shadow-lg p-6">
+    <div class="grid gap-4 md:grid-cols-2">
+      <div class="md:col-span-2">
+        <h2 class="text-lg font-semibold text-slate-900 mb-1">Description</h2>
+        <p class="text-slate-600 leading-7"><%= event.description %></p>
+      </div>
 
-<section>
-  <h2>Actions</h2>
+      <div>
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-1">Location</h3>
+        <p class="text-slate-800"><%= event.location %></p>
+      </div>
 
-  <a href="/events/<%= event.id %>/edit">Edit Event</a>
+      <div>
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-1">Category</h3>
+        <p class="text-slate-800"><%= event.category %></p>
+      </div>
 
-  <% if (event.status === "draft") { %>
-    <form method="POST" action="/events/<%= event.id %>/publish">
-      <button type="submit">Publish Event</button>
-    </form>
-  <% } %>
+      <div>
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-1">Starts</h3>
+        <p class="text-slate-800"><%= new Date(event.startDateTime).toLocaleString() %></p>
+      </div>
 
-  <% if (event.status === "published") { %>
-    <form method="POST" action="/events/<%= event.id %>/cancel">
-      <button type="submit">Cancel Event</button>
-    </form>
-  <% } %>
-  
-  <% if (event.status === "published") { %>
-    <form method="POST" action="/events/<%= event.id %>/rsvp">
-      <button type="submit">RSVP to this Event</button>
-    </form>
-  <% } %>
+      <div>
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-1">Ends</h3>
+        <p class="text-slate-800"><%= new Date(event.endDateTime).toLocaleString() %></p>
+      </div>
+
+      <div>
+        <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-1">Capacity</h3>
+        <p class="text-slate-800"><%= event.capacity ?? "No limit" %></p>
+      </div>
+    </div>
+  </article>
+
+  <div id="event-detail-actions">
+    <%- include("partials/detail-actions", {
+      event,
+      rsvp,
+      rsvpError,
+      transitionError: null,
+    }) %>
+  </div>
 </section>

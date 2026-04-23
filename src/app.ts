@@ -257,6 +257,89 @@ class ExpressApp implements IApp {
       }),
     );
 
+    this.app.get(
+      "/dashboard",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+
+        const currentUser = getAuthenticatedUser(sessionStore(req));
+        if (!currentUser) {
+          res.redirect('/login');
+          return;
+        }
+
+        const browserSession = recordPageView(sessionStore(req));
+        await this.eventController.showOrganizerDashboard(
+          res,
+          currentUser.userId,
+          currentUser.role,
+          browserSession,
+        );
+      }),
+    );
+
+
+    this.app.get(
+      "/events/search",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+ 
+        const browserSession = recordPageView(sessionStore(req));
+        const query = typeof req.query.q === "string" ? req.query.q : "";
+ 
+        await this.eventController.showSearchPage(
+          res,
+          browserSession,
+          query,
+          this.isHtmxRequest(req),
+        );
+      }),
+    );
+
+    this.app.get(
+      "/events/archive",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+ 
+        const browserSession = recordPageView(sessionStore(req));
+        const category = typeof req.query.category === "string" ? req.query.category : "";
+ 
+        await this.eventController.showArchivePage(
+          res,
+          browserSession,
+          category,
+          this.isHtmxRequest(req),
+        );
+      }),
+    );
+
+    this.app.get(
+      "/events/new",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+        const browserSession = recordPageView(sessionStore(req));
+        await this.eventController.showCreateEventPage(res, browserSession);
+      }),
+    );
+
+    this.app.get(
+      "/events/:id",
+      asyncHandler(async (req, res) => {
+        if (!this.requireAuthenticated(req, res)) return;
+        const currentUser = getAuthenticatedUser(sessionStore(req));
+        const browserSession = recordPageView(sessionStore(req));
+        await this.eventController.showEventDetailPage(
+          res,
+          typeof req.params.id === "string" ? req.params.id : "",
+          currentUser?.userId,
+          browserSession,
+        );
+      }),
+    );    
+    
+
         // ── Event editing routes ─────────────────────────────────────────
 
     this.app.get(
@@ -275,10 +358,13 @@ class ExpressApp implements IApp {
           return;
         }
 
+        const browserSession = recordPageView(sessionStore(req));
         await this.eventController.showEditEventPage(
           res,
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
+          currentUser.role,
+          browserSession,
         );
       }),
     );
@@ -308,6 +394,8 @@ class ExpressApp implements IApp {
           res,
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
+          currentUser.role,
+          this.isHtmxRequest(req),
           {
             title: typeof req.body.title === "string" ? req.body.title : "",
             description:
@@ -354,6 +442,7 @@ class ExpressApp implements IApp {
           res,
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
+          this.isHtmxRequest(req),
         );
       }),
     );
@@ -379,6 +468,7 @@ class ExpressApp implements IApp {
           typeof req.params.id === "string" ? req.params.id : "",
           currentUser.userId,
           currentUser.role,
+          this.isHtmxRequest(req),
         );
       }),
     );
@@ -403,35 +493,60 @@ class ExpressApp implements IApp {
       }),
     );
 
-    this.app.get(
-      "/events/search",
+    this.app.post(
+      "/events",
       asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
- 
-        const browserSession = recordPageView(sessionStore(req));
-        const query = typeof req.query.q === "string" ? req.query.q : "";
- 
-        await this.eventController.showSearchPage(
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
+        const currentUser = getAuthenticatedUser(sessionStore(req));
+        if (!currentUser) {
+          res.status(401).render("partials/error", {
+            message: AuthenticationRequired("Please log in to continue.").message,
+            layout: false,
+          });
+          return;
+        }
+
+        const rawCapacity =
+          typeof req.body.capacity === "string" ? req.body.capacity.trim() : "";
+        const parsedCapacity =
+          rawCapacity === "" ? undefined : Number.parseInt(rawCapacity, 10);
+
+        const browserSession = 
+          touchAppSession(sessionStore(req));
+
+        await this.eventController.createEventFromForm(
           res,
           browserSession,
-          query,
-          this.isHtmxRequest(req),
+          currentUser.userId,
+          {
+            title: typeof req.body.title === "string" ? req.body.title : "",
+            description: typeof req.body.description === "string" ? req.body.description : "",
+            location: typeof req.body.location === "string" ? req.body.location : "",
+            category: typeof req.body.category === "string" ? req.body.category : "",
+            capacity: Number.isNaN(parsedCapacity) ? undefined : parsedCapacity,
+            startDateTime: typeof req.body.startDateTime === "string" ? req.body.startDateTime : "",
+            endDateTime: typeof req.body.endDateTime === "string" ? req.body.endDateTime : "",
+          },
+          this.isHtmxRequest(req), //
         );
       }),
     );
 
     this.app.get(
-      "/events/archive",
+      "/events",
       asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) return;
- 
+        if (!this.requireAuthenticated(req, res)) {
+          return;
+        }
+
         const browserSession = recordPageView(sessionStore(req));
-        const category = typeof req.query.category === "string" ? req.query.category : "";
- 
-        await this.eventController.showArchivePage(
-          res,
-          browserSession,
-          category,
+        await this.eventController.showEventList(res,browserSession, {
+            category: typeof req.query.category === "string" ? req.query.category : undefined,
+            timeframe: typeof req.query.timeframe === "string" ? req.query.timeframe : undefined,
+          },
           this.isHtmxRequest(req),
         );
       }),
@@ -447,20 +562,9 @@ class ExpressApp implements IApp {
         layout: false,
       });
     });
+    
 
-    this.app.get(
-      "/events",
-      asyncHandler(async (req, res) => {
-        if (!this.requireAuthenticated(req, res)) {
-          return;
-        }
 
-        await this.eventController.showEventList(res, {
-          category: typeof req.query.category === "string" ? req.query.category : undefined,
-          timeframe: typeof req.query.timeframe === "string" ? req.query.timeframe : undefined,
-        });
-      }),
-    );
   }
 
   getExpressApp(): express.Express {
