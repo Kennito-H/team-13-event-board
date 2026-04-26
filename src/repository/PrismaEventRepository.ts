@@ -1,5 +1,5 @@
 import type { Event, EventStatus } from '../events/Event';
-import type { IEventRepository } from './EventRepository';
+import type { IEventRepository, PublishedEventFilters } from './EventRepository';
 import { prisma } from '../lib/prisma';
 
 function toEvent(row: {
@@ -93,6 +93,22 @@ export class PrismaEventRepository implements IEventRepository {
 
   async findByOrganizer(organizerId: string): Promise<Event[]> {
     const rows = await prisma.event.findMany({ where: { organizerId } });
+    return rows.map(toEvent);
+  }
+
+  async findPublishedFiltered(filters: PublishedEventFilters): Promise<Event[]> {
+    const startDateTime: { gte?: Date; lte?: Date } = {};
+    if (filters.startAfter) startDateTime.gte = filters.startAfter;
+    if (filters.startBefore) startDateTime.lte = filters.startBefore;
+
+    const rows = await prisma.event.findMany({
+      where: {
+        status: 'published',
+        ...(filters.category ? { category: filters.category } : {}),
+        ...(filters.startAfter || filters.startBefore ? { startDateTime } : {}),
+      },
+      orderBy: { startDateTime: 'asc' },
+    });
     return rows.map(toEvent);
   }
 }
