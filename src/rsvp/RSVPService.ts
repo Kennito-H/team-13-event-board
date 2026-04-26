@@ -112,26 +112,17 @@ export class RSVPService implements IRSVPService{
       return Err(new EventNotFoundError('RSVP is already cancelled'));
     }
 
-    const wasGoing = rsvp.status === 'going';
-
-    const cancelled = await this.rsvpRepo.update(rsvpId, { status: 'cancelled' });
-
-    if (!wasGoing) {
+    if (rsvp.status !== 'going') {
+      const cancelled = await this.rsvpRepo.update(rsvpId, { status: 'cancelled' });
       return Ok({ cancelled: cancelled! });
     }
 
-    const nextInLine = await this.rsvpRepo.findFirstWaitlistedByEvent(rsvp.eventId);
-    if (!nextInLine) {
-      return Ok({ cancelled: cancelled! });
-    }
+    const { cancelled, promoted } = await this.rsvpRepo.cancelAndPromoteAtomically(
+      rsvpId,
+      rsvp.eventId,
+    );
 
-    const promoted = await this.rsvpRepo.update(nextInLine.id, { status: 'going' });
-    if (!promoted) {
-      await this.rsvpRepo.update(rsvpId, { status: 'going' });
-      return Err(new EventNotFoundError('Promotion failed, cancellation rolled back'));
-    }
-
-    return Ok({ cancelled: cancelled!, promoted });
+    return Ok({ cancelled, promoted });
   }
 
   async getWaitlistPosition(
