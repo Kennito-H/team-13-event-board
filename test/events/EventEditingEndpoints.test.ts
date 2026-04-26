@@ -1,6 +1,6 @@
 import request from "supertest";
 import { createComposedApp } from "../../src/composition";
-import { CreateInMemoryEventRepository } from "../../src/repository/InMemoryEventRepository";
+import { prisma } from "../../src/lib/prisma";
 import type { Event } from "../../src/events/Event";
 
 describe("Event editing endpoints", () => {
@@ -19,7 +19,30 @@ describe("Event editing endpoints", () => {
     updatedAt: new Date("2026-04-01T12:00:00.000Z"),
   };
 
-  const eventRepository = CreateInMemoryEventRepository([seededEvent]);
+  const testEventIds = [
+    seededEvent.id,
+    "event-edit-organizer",
+    "event-edit-cancelled",
+  ];
+
+  beforeAll(async () => {
+    await prisma.rSVP.deleteMany({ where: { eventId: { in: testEventIds } } });
+    await prisma.event.deleteMany({ where: { id: { in: testEventIds } } });
+
+    await prisma.event.create({
+      data: {
+        ...seededEvent,
+        capacity: seededEvent.capacity ?? null,
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.rSVP.deleteMany({ where: { eventId: { in: testEventIds } } });
+    await prisma.event.deleteMany({ where: { id: { in: testEventIds } } });
+  });
+
+
   const app = createComposedApp().getExpressApp();
 
   async function loginAsAdmin() {
@@ -56,7 +79,10 @@ describe("Event editing endpoints", () => {
 
     expect(response.headers.location).toBe(`/events/${seededEvent.id}`);
 
-    const savedEvent = await eventRepository.findById(seededEvent.id);
+    const savedEvent = await prisma.event.findUnique({
+      where: { id: seededEvent.id },
+    });
+
 
     expect(savedEvent).not.toBeNull();
     expect(savedEvent?.title).toBe("Updated Title");
@@ -82,7 +108,12 @@ describe("Event editing endpoints", () => {
         updatedAt: new Date("2026-04-01T12:00:00.000Z"),
     };
 
-    await eventRepository.save(organizerOwnedEvent);
+    await prisma.event.create({
+      data: {
+        ...organizerOwnedEvent,
+        capacity: organizerOwnedEvent.capacity ?? null,
+      },
+    });
 
     const agent = await loginAsUser();
 
@@ -102,7 +133,10 @@ describe("Event editing endpoints", () => {
 
     expect(response.headers.location).toBe(`/events/${organizerOwnedEvent.id}`);
 
-    const savedEvent = await eventRepository.findById(organizerOwnedEvent.id);
+    const savedEvent = await prisma.event.findUnique({
+      where: { id: organizerOwnedEvent.id },
+    });
+
 
     expect(savedEvent).not.toBeNull();
     expect(savedEvent?.title).toBe("Organizer Updated Title");
@@ -183,7 +217,12 @@ describe("Event editing endpoints", () => {
         updatedAt: new Date("2026-04-01T12:00:00.000Z"),
     };
 
-    await eventRepository.save(cancelledEvent);
+    await prisma.event.create({
+      data: {
+        ...cancelledEvent,
+        capacity: cancelledEvent.capacity ?? null,
+      },
+    });
 
     const agent = await loginAsAdmin();
 
