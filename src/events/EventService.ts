@@ -448,29 +448,26 @@ class EventService implements IEventService {
     }
 
     const now = new Date();
-    let startDate: Date | undefined;
-    let endDate: Date | undefined;
+    let startAfter: Date | undefined;
+    let startBefore: Date | undefined;
 
     if (filters.timeframe === "this-week") {
-      startDate = now;
-      endDate = this.endOfWeek(now);
+      startAfter = now;
+      startBefore = this.endOfWeek(now);
     } else if (filters.timeframe === "this-weekend") {
-      startDate = this.startOfUpcomingSaturday(now);
-      endDate = this.endOfUpcomingSunday(now);
+      startAfter = this.startOfUpcomingSaturday(now);
+      startBefore = this.endOfUpcomingSunday(now);
     } else if (filters.timeframe === "upcoming") {
-      startDate = now;
+      startAfter = now;
     }
 
-    const published = await this.eventRepository.findByStatus("published");
-
-    const filtered = published.filter((event) => {
-      if (filters.category && event.category !== filters.category) return false;
-      if (startDate && event.startDateTime < startDate) return false;
-      if (endDate && event.startDateTime > endDate) return false;
-      return true;
+    const events = await this.eventRepository.findPublishedFiltered({
+      category: filters.category,
+      startAfter,
+      startBefore,
     });
 
-    return Ok(this.sortByDateAsc(filtered));
+    return Ok(events);
   }
 
   private endOfWeek(date: Date): Date {

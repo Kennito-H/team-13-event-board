@@ -1,5 +1,5 @@
 import type { Event, EventStatus } from '../events/Event';
-import type { IEventRepository } from './EventRepository';
+import type { IEventRepository, PublishedEventFilters } from './EventRepository';
 
 class InMemoryEventRepository implements IEventRepository {
   private readonly events: Map<string, Event>;
@@ -41,6 +41,18 @@ class InMemoryEventRepository implements IEventRepository {
       .map((e) => this.clone(e));
   }
 
+  async findPublishedFiltered(filters: PublishedEventFilters): Promise<Event[]> {
+    return Array.from(this.events.values())
+      .filter((e) => {
+        if (e.status !== 'published') return false;
+        if (filters.category && e.category !== filters.category) return false;
+        if (filters.startAfter && e.startDateTime < filters.startAfter) return false;
+        if (filters.startBefore && e.startDateTime > filters.startBefore) return false;
+        return true;
+      })
+      .map((e) => this.clone(e))
+      .sort((a, b) => a.startDateTime.getTime() - b.startDateTime.getTime());
+  }
 
   private clone(event: Event): Event {
     return {
