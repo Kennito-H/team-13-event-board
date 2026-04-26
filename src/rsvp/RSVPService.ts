@@ -78,16 +78,7 @@ export class RSVPService implements IRSVPService{
   }
 
   async getUserRSVPs(userId: string): Promise<Result<RSVPWithEvent[], never>> {
-    const rsvps = await this.rsvpRepo.findByUserId(userId);
-
-    // Join with event details
-    const rsvpsWithEvents: RSVPWithEvent[] = [];
-    for (const rsvp of rsvps) {
-      const event = await this.eventRepo.findById(rsvp.eventId);
-      if (event) {
-        rsvpsWithEvents.push({ rsvp, event });
-      }
-    }
+    const rsvpsWithEvents: RSVPWithEvent[] = await this.rsvpRepo.findByUserIdWithEvents(userId);
 
     // Sort: upcoming first (by event start time), then by RSVP createdAt
     rsvpsWithEvents.sort((a, b) => {
