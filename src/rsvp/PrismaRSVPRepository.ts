@@ -84,6 +84,34 @@ export class PrismaRSVPRepository implements RSVPRepository {
     });
     return row ? toRSVP(row) : null;
   }
+  async cancelAndPromoteAtomically(
+    rsvpId: string,
+    eventId: string,
+  ): Promise<{ cancelled: RSVP; promoted?: RSVP }> {
+    return prisma.$transaction(async (tx) => {
+      const cancelledRow = await tx.rSVP.update({
+        where: { id: rsvpId },
+        data: { status: 'cancelled' },
+      });
+
+      const nextInLine = await tx.rSVP.findFirst({
+        where: { eventId, status: 'waitlisted' },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (!nextInLine) {
+        return { cancelled: toRSVP(cancelledRow) };
+      }
+
+      const promotedRow = await tx.rSVP.update({
+        where: { id: nextInLine.id },
+        data: { status: 'going' },
+      });
+
+      return { cancelled: toRSVP(cancelledRow), promoted: toRSVP(promotedRow) };
+    });
+  }
+
   async findByUserIdWithEvents(userId: string): Promise<Array<{ rsvp: RSVP; event: Event }>> {
     const rows = await prisma.rSVP.findMany({
       where: { userId },

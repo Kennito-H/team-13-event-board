@@ -11,4 +11,8 @@ export interface RSVPRepository {
   findById(id: string): Promise<RSVP | null>;
   findFirstWaitlistedByEvent(eventId: string): Promise<RSVP | null>;
   findByUserIdWithEvents(userId: string): Promise<Array<{ rsvp: RSVP; event: Event }>>;
+  cancelAndPromoteAtomically(
+    rsvpId: string,
+    eventId: string,
+  ): Promise<{ cancelled: RSVP; promoted?: RSVP }>;
 }
