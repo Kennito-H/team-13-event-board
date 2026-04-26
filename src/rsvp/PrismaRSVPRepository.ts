@@ -1,6 +1,8 @@
 import type { RSVP, CreateRSVPInput } from './RSVP';
 import type { RSVPRepository } from './RSVPRepository';
 import { prisma } from '../lib/prisma';
+import type { Event, EventStatus } from '../events/Event';
+
 
 function toRSVP(row: {
   id: string;
@@ -82,6 +84,30 @@ export class PrismaRSVPRepository implements RSVPRepository {
     });
     return row ? toRSVP(row) : null;
   }
+  async findByUserIdWithEvents(userId: string): Promise<Array<{ rsvp: RSVP; event: Event }>> {
+    const rows = await prisma.rSVP.findMany({
+      where: { userId },
+      include: { event: true },
+    });
+    return rows.map((row) => ({
+      rsvp: toRSVP(row),
+      event: {
+        id: row.event.id,
+        title: row.event.title,
+        description: row.event.description,
+        location: row.event.location,
+        category: row.event.category,
+        capacity: row.event.capacity ?? undefined,
+        status: row.event.status as EventStatus,
+        startDateTime: row.event.startDateTime,
+        endDateTime: row.event.endDateTime,
+        organizerId: row.event.organizerId,
+        createdAt: row.event.createdAt,
+        updatedAt: row.event.updatedAt,
+      },
+    }));
+  }
+
 }
 
 export function CreatePrismaRSVPRepository(): RSVPRepository {
