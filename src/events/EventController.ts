@@ -40,6 +40,7 @@ export interface IEventController {
     res: Response,
     eventId: string,
     userId: string,
+    userRole: UserRole,
     isHtmx: boolean,
   ): Promise<void>;
 
@@ -98,6 +99,7 @@ export interface IEventController {
     res: Response,
     eventId: string,
     userId?: string,
+    userRole?: UserRole,
     session?: IAppBrowserSession,
     rsvpError?: string | null,
   ): Promise<void>;
@@ -286,6 +288,8 @@ class EventController implements IEventController {
     res.render("events/partials/detail-actions", {
       event,
       rsvp: null,
+      isOrganizer: true,
+      isAdmin: true,
       rsvpError: options?.rsvpError ?? null,
       transitionError: options?.transitionError ?? null,
       layout: false,
@@ -296,9 +300,10 @@ class EventController implements IEventController {
     res: Response,
     eventId: string,
     userId: string,
+    userRole: UserRole,
     isHtmx: boolean,
   ): Promise<void> {
-    const result = await this.eventService.publishEvent(eventId, userId);
+    const result = await this.eventService.publishEvent(eventId, userId, userRole);
 
     if (result.ok === false) {
       const error: EventError = result.value;
@@ -309,7 +314,7 @@ class EventController implements IEventController {
         error.name === "UnauthorizedError" ||
         error.name === "InvalidStateError"
       )) {
-        const currentEvent = await this.eventService.getEventById(eventId, userId);
+        const currentEvent = await this.eventService.getEventById(eventId, userId, userRole);
 
         if (currentEvent.ok === true) {
           this.renderDetailActions(res, currentEvent.value, {
@@ -381,7 +386,7 @@ class EventController implements IEventController {
         error.name === "UnauthorizedError" ||
         error.name === "InvalidStateError"
       )) {
-        const currentEvent = await this.eventService.getEventById(eventId, userId);
+        const currentEvent = await this.eventService.getEventById(eventId, userId, userRole);
 
         if (currentEvent.ok === true) {
           this.renderDetailActions(res, currentEvent.value, {
@@ -679,10 +684,11 @@ class EventController implements IEventController {
     res: Response,
     eventId: string,
     userId?: string,
+    userRole?: UserRole,
     session?: IAppBrowserSession,
     rsvpError?: string | null,
   ): Promise<void> {
-    const result = await this.eventService.getEventById(eventId, userId);
+    const result = await this.eventService.getEventById(eventId, userId, userRole);
   
     if (result.ok === false) {
       const error = result.value;

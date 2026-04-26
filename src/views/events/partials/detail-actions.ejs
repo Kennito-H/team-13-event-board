@@ -18,12 +18,14 @@
       </span>
     </div>
 
-    <a
-      href="/events/<%= event.id %>/edit"
-      class="px-4 py-2.5 rounded-lg bg-white text-slate-700 border border-slate-300 text-sm font-medium no-underline hover:bg-slate-50"
-    >
-      Edit Event
-    </a>
+    <% if (isOrganizer || isAdmin) { %>
+      <a
+        href="/events/<%= event.id %>/edit"
+        class="px-4 py-2.5 rounded-lg bg-white text-slate-700 border border-slate-300 text-sm font-medium no-underline hover:bg-slate-50"
+      >
+        Edit Event
+      </a>
+    <% } %>
   </div>
 
   <% if (transitionError) { %>
@@ -31,7 +33,7 @@
   <% } %>
 
   <div class="grid gap-3">
-    <% if (event.status === "draft") { %>
+    <% if ((isOrganizer || isAdmin) && event.status === "draft") { %>
       <form
         method="POST"
         action="/events/<%= event.id %>/publish"
@@ -50,7 +52,7 @@
 
     <% } %>
 
-    <% if (event.status === "published") { %>
+    <% if ((isOrganizer || isAdmin) && event.status === "published") { %>
       <form
         method="POST"
         action="/events/<%= event.id %>/cancel"

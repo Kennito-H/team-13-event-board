@@ -40,6 +40,7 @@ export interface IEventService {
   getEventById(
     eventId: string,
     requestingUserId?: string,
+    userRole?: UserRole,
   ): Promise<Result<Event, EventError>>;
 
   updateEvent(
@@ -58,6 +59,7 @@ export interface IEventService {
   publishEvent(
     eventId: string,
     userId: string,
+    userRole: UserRole,
   ): Promise<Result<Event, EventError>>;
 
   cancelEvent(
@@ -96,6 +98,7 @@ class EventService implements IEventService {
   async getEventById(
     eventId: string,
     requestingUserId?: string,
+    userRole?: UserRole,
   ): Promise<Result<Event, EventError>> {
     const event = await this.eventRepository.findById(eventId);
 
@@ -103,10 +106,11 @@ class EventService implements IEventService {
       return Err(NotFoundError("Event does not exist."));
     }
 
-    if (event.status === "draft" && event.organizerId !== requestingUserId) {
-      return Err(
-        UnauthorizedError("Draft events are only visible to the organizer."),
-      );
+    const isOrganizer = event.organizerId === requestingUserId;
+    const isAdmin = userRole === "admin";
+
+    if (event.status === "draft" && !isOrganizer && !isAdmin) {
+      return Err(UnauthorizedError("Draft events are only visible to the organizer or admins."));
     }
 
     return Ok(event);
@@ -173,6 +177,7 @@ class EventService implements IEventService {
   async publishEvent(
     eventId: string,
     userId: string,
+    userRole: UserRole,
   ): Promise<Result<Event, EventError>> {
     const existingEvent = await this.eventRepository.findById(eventId);
 
@@ -180,10 +185,14 @@ class EventService implements IEventService {
       return Err(NotFoundError("Event does not exist."));
     }
 
-    if (existingEvent.organizerId !== userId) {
+    const isOrganizer = existingEvent.organizerId === userId;
+    const isAdmin = userRole === "admin";
+
+
+    if (!isOrganizer && !isAdmin) {
       return Err(
-        UnauthorizedError("Only the organizer can publish this event."),
-      );
+       UnauthorizedError("Only the organizer or an admin can publish this event."),
+     );
     }
 
     if (existingEvent.status !== "draft") {
