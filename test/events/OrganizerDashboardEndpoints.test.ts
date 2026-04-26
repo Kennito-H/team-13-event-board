@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { createComposedApp } from '../../src/composition';
-import { CreateInMemoryEventRepository } from '../../src/repository/InMemoryEventRepository';
+import { prisma } from '../../src/lib/prisma';
 import { CreateInMemoryRSVPRepository } from '../../src/rsvp/InMemoryRSVPRepository';
 import type { Event } from '../../src/events/Event';
 
@@ -37,16 +37,23 @@ const otherEvent: Event = {
   updatedAt: new Date('2027-01-01T00:00:00.000Z'),
 };
 
-CreateInMemoryEventRepository([staffEvent, otherEvent]);
-CreateInMemoryRSVPRepository([
-  {
-    id: 'dashboard-rsvp-1',
-    eventId: 'dashboard-staff-event',
-    userId: 'user-reader',
-    status: 'going',
-    createdAt: new Date('2027-01-01T00:00:00.000Z'),
-  },
-]);
+const testEventIds = [staffEvent.id, otherEvent.id];
+
+beforeAll(async () => {
+  await prisma.event.deleteMany({ where: { organizerId: 'user-reader' } });
+  await prisma.rSVP.deleteMany({ where: { eventId: { in: testEventIds } } });
+  await prisma.event.deleteMany({ where: { id: { in: testEventIds } } });
+  await prisma.event.createMany({ data: [staffEvent, otherEvent] });
+  await prisma.rSVP.create({
+    data: { id: 'dashboard-rsvp-1', eventId: staffEvent.id, userId: 'user-reader', status: 'going' },
+  });
+});
+
+afterAll(async () => {
+  await prisma.rSVP.deleteMany({ where: { eventId: { in: testEventIds } } });
+  await prisma.event.deleteMany({ where: { id: { in: testEventIds } } });
+});
+
 
 const app = createComposedApp().getExpressApp();
 
