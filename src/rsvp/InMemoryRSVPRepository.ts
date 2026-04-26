@@ -78,6 +78,10 @@ export class InMemoryRSVPRepository implements RSVPRepository {
     }
     return earliest;
   }
+  
+  async findByUserIdWithEvents(_userId: string): Promise<Array<{ rsvp: never; event: never }>> {
+    return [];
+  }
 
 }
 
