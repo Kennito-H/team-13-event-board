@@ -149,7 +149,7 @@ describe("Event transition endpoints", () => {
     expect(response.headers.location).toBe(`/events/${organizerPublishedEvent.id}`);
 
     const savedEvent = await prisma.event.findUnique({
-      where: { id: draftEvent.id },
+      where: { id: organizerPublishedEvent.id },
     });
 
     expect(savedEvent).not.toBeNull();
@@ -166,7 +166,7 @@ describe("Event transition endpoints", () => {
     expect(response.headers.location).toBe(`/events/${adminCancellableEvent.id}`);
 
     const savedEvent = await prisma.event.findUnique({
-      where: { id: draftEvent.id },
+      where: { id: adminCancellableEvent.id },
     });
 
     expect(savedEvent).not.toBeNull();
@@ -217,7 +217,7 @@ describe("Event transition endpoints", () => {
         .post(`/events/${otherUsersDraftEvent.id}/publish`)
         .expect(403);
 
-    expect(response.text).toContain("Only the organizer can publish this event.");
+    expect(response.text).toContain("Only the organizer or an admin can publish this event.");
     });
 
     it("returns 404 when publishing an event that does not exist", async () => {
