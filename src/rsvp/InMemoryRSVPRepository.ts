@@ -83,6 +83,31 @@ export class InMemoryRSVPRepository implements RSVPRepository {
     return [];
   }
 
+  async cancelAndPromoteAtomically(
+    rsvpId: string,
+    eventId: string,
+  ): Promise<{ cancelled: RSVP; promoted?: RSVP }> {
+    const existing = this.rsvps.get(rsvpId);
+    if (!existing) {
+      throw new Error(`RSVP ${rsvpId} not found`);
+    }
+
+    const cancelled: RSVP = { ...existing, status: 'cancelled' };
+    this.rsvps.set(rsvpId, cancelled);
+
+    let earliest: RSVP | null = null;
+    for (const r of this.rsvps.values()) {
+      if (r.eventId === eventId && r.status === 'waitlisted') {
+        if (!earliest || r.createdAt < earliest.createdAt) earliest = r;
+      }
+    }
+
+    if (!earliest) return { cancelled };
+
+    const promoted: RSVP = { ...earliest, status: 'going' };
+    this.rsvps.set(earliest.id, promoted);
+    return { cancelled, promoted };
+  }
 }
 
 let rsvpRepositoryInstance: InMemoryRSVPRepository | null = null;
