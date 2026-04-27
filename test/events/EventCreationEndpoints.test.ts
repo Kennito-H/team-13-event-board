@@ -1,18 +1,27 @@
 import request from "supertest";
 import { createComposedApp } from "../../src/composition";
+import { prisma } from "../../src/lib/prisma";
 
 describe("Event creation endpoints", () => {
     const app = createComposedApp().getExpressApp();
+    const createdEventIds: string[] = [];
 
-    async function loginAsStaff(){
+    afterAll(async () => {
+        if (createdEventIds.length > 0) {
+            await prisma.rSVP.deleteMany({ where: { eventId: { in: createdEventIds } } });
+            await prisma.event.deleteMany({ where: { id: { in: createdEventIds } } });
+        }
+    });
+
+    async function loginAsStaff() {
         const agent = request.agent(app);
-        await agent.post("/login").type("form").send({ email:"staff@app.test", password: "password123" }).expect(302);
+        await agent.post("/login").type("form").send({ email: "staff@app.test", password: "password123" }).expect(302);
         return agent;
     }
 
-    async function loginAsUser(){
+    async function loginAsUser() {
         const agent = request.agent(app);
-        await agent.post("/login").type("form").send({ email: "user@app.test" , password: "password123" }).expect(302);
+        await agent.post("/login").type("form").send({ email: "user@app.test", password: "password123" }).expect(302);
         return agent;
     }
 
@@ -25,22 +34,26 @@ describe("Event creation endpoints", () => {
         endDateTime: "2027-06-01T21:00",
     };
 
-    it("creates a draft event and redirects to detail page", async() => {
+    it("creates a draft event and redirects to detail page", async () => {
         const agent = await loginAsStaff();
         const response = await agent.post("/events").type("form").send(validForm).expect(302);
-        expect(response.headers.location).toMatch(/^\/events\/[a-z0-9-]+$/);
+        const location = response.headers.location as string;
+        createdEventIds.push(location.split("/").pop()!);
+        expect(location).toMatch(/^\/events\/[a-z0-9-]+$/);
     });
 
-    it("creates an event with no capacity when capacity is omitted", async() =>{
+    it("creates an event with no capacity when capacity is omitted", async () => {
         const agent = await loginAsStaff();
         const response = await agent.post("/events").type("form").send({ ...validForm, title: "No-Cap Event" }).expect(302);
-        expect(response.headers.location).toMatch(/^\/events\/[a-z0-9-]+$/);
+        const location = response.headers.location as string;
+        createdEventIds.push(location.split("/").pop()!);
+        expect(location).toMatch(/^\/events\/[a-z0-9-]+$/);
     });
 
     //Validation errors
-    it("returns 400 when title is missing", async() => {
+    it("returns 400 when title is missing", async () => {
         const agent = await loginAsStaff();
-        const response = await agent.post("/events").type("form").send({ ...validForm, title: ""}).expect(400);
+        const response = await agent.post("/events").type("form").send({ ...validForm, title: "" }).expect(400);
         expect(response.text).toContain("Title is required.");
     });
 
@@ -50,15 +63,15 @@ describe("Event creation endpoints", () => {
         expect(response.text).toContain("Description is required.");
     });
 
-    it("returns 400 when location is missing", async() => {
+    it("returns 400 when location is missing", async () => {
         const agent = await loginAsStaff();
-        const response = await agent.post("/events").type("form").send({ ...validForm, location: ""}).expect(400);
+        const response = await agent.post("/events").type("form").send({ ...validForm, location: "" }).expect(400);
         expect(response.text).toContain("Location is required.");
     });
 
     it("returns 400 when category is missing", async () => {
         const agent = await loginAsStaff();
-        const response = await agent.post("/events").type("form").send({ ...validForm, category: ""}).expect(400);
+        const response = await agent.post("/events").type("form").send({ ...validForm, category: "" }).expect(400);
         expect(response.text).toContain("Category is required.");
     });
 
@@ -87,16 +100,17 @@ describe("Event creation endpoints", () => {
         expect(response.text).toContain("Only organizers can create events.");
     });
 
-    it("redirects unauthenticated user away from GET /events/new", async() =>{
+    it("redirects unauthenticated user away from GET /events/new", async () => {
         const response = await request(app).get("/events/new").expect(302);
         expect(response.headers.location).toBe("/login");
     });
 
-    //Edge Cases(s)
-    it("trims whitespace from fields and still creates the event", async () =>{
+    //Edge Cases
+    it("trims whitespace from fields and still creates the event", async () => {
         const agent = await loginAsStaff();
-        const response = await agent.post("/events").type("form").send({...validForm, title: " Trimmed Title  "}).expect(302);
-        expect(response.headers.location).toMatch(/^\/events\/[a-z0-9-]+$/);
+        const response = await agent.post("/events").type("form").send({ ...validForm, title: " Trimmed Title  " }).expect(302);
+        const location = response.headers.location as string;
+        createdEventIds.push(location.split("/").pop()!);
+        expect(location).toMatch(/^\/events\/[a-z0-9-]+$/);
     });
-
 });
