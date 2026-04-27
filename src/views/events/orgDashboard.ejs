@@ -44,9 +44,11 @@
               </td>
               <td class="px-5 py-4">
                 <div class="flex items-center gap-2">
-                  <a href="/events/<%= event.id %>/edit" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50">
-                    Edit
-                  </a>
+                  <% if (event.status !== "cancelled" && event.status !== "past") { %>
+                    <a href="/events/<%= event.id %>/edit" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50">
+                      Edit
+                    </a>
+                  <% } %>
                   <a href="/events/<%= event.id %>" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50">
                     View
                   </a>
