@@ -1,63 +1,118 @@
 import request from "supertest";
 import { createComposedApp } from "../../src/composition";
-import { CreateInMemoryEventRepository } from "../../src/repository/InMemoryEventRepository";
+import { prisma } from "../../src/lib/prisma";
 import type { Event } from "../../src/events/Event";
 
+const organizerId = "user-staff";
+
+const publishedEvent: Event = {
+    id: "detail-published-1",
+    title: "Published Event",
+    description: "A published event anyone can see.",
+    location: "Main Hall",
+    category: "Social",
+    status: "published",
+    startDateTime: new Date("2027-06-01T18:00:00.000Z"),
+    endDateTime: new Date("2027-06-01T21:00:00.000Z"),
+    organizerId,
+    createdAt: new Date("2026-04-01T12:00:00.000Z"),
+    updatedAt: new Date("2026-04-01T12:00:00.000Z"),
+};
+
+const draftEvent: Event = {
+    id: "detail-draft-1",
+    title: "Draft Event",
+    description: "A draft only the organizer can see.",
+    location: "Back Room",
+    category: "Educational",
+    status: "draft",
+    startDateTime: new Date("2027-07-01T18:00:00.000Z"),
+    endDateTime: new Date("2027-07-01T21:00:00.000Z"),
+    organizerId,
+    createdAt: new Date("2026-04-01T12:00:00.000Z"),
+    updatedAt: new Date("2026-04-01T12:00:00.000Z"),
+};
+
+const noCapEvent: Event = {
+    id: "detail-nocap-1",
+    title: "No Cap Event",
+    description: "Unlimited spots.",
+    location: "Outdoor Field",
+    category: "Sports",
+    status: "published",
+    capacity: undefined,
+    startDateTime: new Date("2027-08-01T10:00:00.000Z"),
+    endDateTime: new Date("2027-08-01T12:00:00.000Z"),
+    organizerId,
+    createdAt: new Date("2026-04-01T12:00:00.000Z"),
+    updatedAt: new Date("2026-04-01T12:00:00.000Z"),
+};
+
+const otherDraft: Event = {
+    id: "detail-draft-other",
+    title: "Someone Else Draft",
+    description: "Not yours.",
+    location: "Somewhere",
+    category: "Arts",
+    status: "draft",
+    startDateTime: new Date("2027-09-01T18:00:00.000Z"),
+    endDateTime: new Date("2027-09-01T21:00:00.000Z"),
+    organizerId: "some-other-organizer-id",
+    createdAt: new Date("2026-04-01T12:00:00.000Z"),
+    updatedAt: new Date("2026-04-01T12:00:00.000Z"),
+};
+
+const testEventIds = [publishedEvent.id, draftEvent.id, noCapEvent.id, otherDraft.id];
+
+beforeAll(async () => {
+    await prisma.rSVP.deleteMany({ where: { eventId: { in: testEventIds } } });
+    await prisma.event.deleteMany({ where: { id: { in: testEventIds } } });
+    await prisma.event.createMany({
+        data: [publishedEvent, draftEvent, noCapEvent, otherDraft].map((e) => ({
+            id: e.id,
+            title: e.title,
+            description: e.description,
+            location: e.location,
+            category: e.category,
+            capacity: e.capacity ?? null,
+            status: e.status,
+            startDateTime: e.startDateTime,
+            endDateTime: e.endDateTime,
+            organizerId: e.organizerId,
+            createdAt: e.createdAt,
+            updatedAt: e.updatedAt,
+        })),
+    });
+});
+
+afterAll(async () => {
+    await prisma.rSVP.deleteMany({ where: { eventId: { in: testEventIds } } });
+    await prisma.event.deleteMany({ where: { id: { in: testEventIds } } });
+});
+
 describe("Event detail page endpoints", () => {
-  const organizerId = "user-staff-id";
-
-    const publishedEvent: Event = {
-        id: "detail-published-1",
-        title: "Published Event",
-        description: "A published event anyone can see.",
-        location: "Main Hall",
-        category: "Social",
-        status: "published",
-        startDateTime: new Date("2027-06-01T18:00:00.000Z"),
-        endDateTime: new Date("2027-06-01T21:00:00.000Z"),
-        organizerId,
-        createdAt: new Date("2026-04-01T12:00:00.000Z"),
-        updatedAt: new Date("2026-04-01T12:00:00.000Z"),
-    };
-
-    const draftEvent: Event = {
-        id: "detail-draft-1",
-        title: "Draft Event",
-        description: "A draft only the organizer can see.",
-        location: "Back Room",
-        category: "Educational",
-        status: "draft",
-        startDateTime: new Date("2027-07-01T18:00:00.000Z"),
-        endDateTime: new Date("2027-07-01T21:00:00.000Z"),
-        organizerId,
-        createdAt: new Date("2026-04-01T12:00:00.000Z"),
-        updatedAt: new Date("2026-04-01T12:00:00.000Z"),
-    };
-
-    const eventRepository = CreateInMemoryEventRepository([publishedEvent, draftEvent]);
     const app = createComposedApp().getExpressApp();
 
     async function loginAsStaff() {
         const agent = request.agent(app);
         await agent.post("/login").type("form")
-        .send({ email: "staff@app.test", password: "password123" }).expect(302);
+            .send({ email: "staff@app.test", password: "password123" }).expect(302);
         return agent;
     }
 
     async function loginAsUser() {
         const agent = request.agent(app);
         await agent.post("/login").type("form")
-        .send({ email: "user@app.test", password: "password123" }).expect(302);
+            .send({ email: "user@app.test", password: "password123" }).expect(302);
         return agent;
     }
 
     async function loginAsAdmin() {
         const agent = request.agent(app);
         await agent.post("/login").type("form")
-        .send({ email: "admin@app.test", password: "password123" }).expect(302);
+            .send({ email: "admin@app.test", password: "password123" }).expect(302);
         return agent;
     }
-
 
     it("renders a published event for any authenticated user", async () => {
         const agent = await loginAsUser();
@@ -73,21 +128,6 @@ describe("Event detail page endpoints", () => {
     });
 
     it("renders a published event with no capacity without crashing", async () => {
-        const noCapEvent: Event = {
-        id: "detail-nocap-1",
-        title: "No Cap Event",
-        description: "Unlimited spots.",
-        location: "Outdoor Field",
-        category: "Sports",
-        status: "published",
-        capacity: undefined,
-        startDateTime: new Date("2027-08-01T10:00:00.000Z"),
-        endDateTime: new Date("2027-08-01T12:00:00.000Z"),
-        organizerId,
-        createdAt: new Date("2026-04-01T12:00:00.000Z"),
-        updatedAt: new Date("2026-04-01T12:00:00.000Z"),
-        };
-        await eventRepository.save(noCapEvent);
         const agent = await loginAsUser();
         const response = await agent.get(`/events/${noCapEvent.id}`).expect(200);
         expect(response.text).toContain("No Cap Event");
@@ -100,21 +140,7 @@ describe("Event detail page endpoints", () => {
     });
 
     it("returns 404 when a non-owning staff user requests a draft", async () => {
-        const otherDraft: Event = {
-        id: "detail-draft-other",
-        title: "Someone Else Draft",
-        description: "Not yours.",
-        location: "Somewhere",
-        category: "Arts",
-        status: "draft",
-        startDateTime: new Date("2027-09-01T18:00:00.000Z"),
-        endDateTime: new Date("2027-09-01T21:00:00.000Z"),
-        organizerId: "some-other-organizer-id",
-        createdAt: new Date("2026-04-01T12:00:00.000Z"),
-        updatedAt: new Date("2026-04-01T12:00:00.000Z"),
-        };
-        await eventRepository.save(otherDraft);
-        // staff@app.test is NOT the organizer of this draft
+        // staff@app.test (user-staff) is NOT the organizer of otherDraft
         const agent = await loginAsStaff();
         await agent.get(`/events/${otherDraft.id}`).expect(404);
     });
@@ -128,7 +154,7 @@ describe("Event detail page endpoints", () => {
     //Unauthenticated
     it("redirects unauthenticated users to login", async () => {
         const response = await request(app)
-        .get(`/events/${publishedEvent.id}`).expect(302);
+            .get(`/events/${publishedEvent.id}`).expect(302);
         expect(response.headers.location).toBe("/login");
     });
 
