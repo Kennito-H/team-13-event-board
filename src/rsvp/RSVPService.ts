@@ -71,7 +71,16 @@ export class RSVPService implements IRSVPService{
       const updated = await this.rsvpRepo.update(existingRSVP.id, { status: newStatus });
       return Ok(updated!);
     } else {
-      // Cancel
+      // Cancel — if the user was attending, free their seat and promote the
+      // first waitlisted member atomically.
+      if (existingRSVP.status === 'going') {
+        const { cancelled } = await this.rsvpRepo.cancelAndPromoteAtomically(
+          existingRSVP.id,
+          eventId,
+        );
+        return Ok(cancelled);
+      }
+
       const updated = await this.rsvpRepo.update(existingRSVP.id, { status: 'cancelled' });
       return Ok(updated!);
     }

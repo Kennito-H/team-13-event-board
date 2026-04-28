@@ -703,10 +703,13 @@ class EventController implements IEventController {
     const rsvp = userId && this.rsvpRepository
       ? await this.rsvpRepository.findByEventAndUser(eventId, userId)
       : null;
+    const waitlistPosition = rsvp && rsvp.status === 'waitlisted' && this.rsvpRepository
+      ? (await this.rsvpRepository.countWaitlistedBeforeByEvent(eventId, rsvp.createdAt)) + 1
+      : null;
     const event = result.value;
     const isOrganizer = userId !== undefined && event.organizerId === userId;
     const isAdmin = session?.authenticatedUser?.role === "admin";
-    res.render("events/detail", { event, session, isOrganizer, isAdmin, rsvpError: rsvpError ?? null, rsvp });
+    res.render("events/detail", { event, session, isOrganizer, isAdmin, rsvpError: rsvpError ?? null, rsvp, waitlistPosition });
   }
 
   async showOrganizerDashboard(
