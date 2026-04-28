@@ -18,6 +18,27 @@ class InMemoryEventRepository implements IEventRepository {
     return this.clone(event);
   }
 
+  async searchPublished(query: string, after: Date): Promise<Event[]> {
+    const lower = query.toLowerCase();
+    const published = Array.from(this.events.values()).filter(
+      (e) => e.status === 'published' && e.startDateTime > after,
+    );
+ 
+    const matched =
+      lower.length === 0
+        ? published
+        : published.filter(
+            (e) =>
+              e.title.toLowerCase().includes(lower) ||
+              e.description.toLowerCase().includes(lower) ||
+              e.location.toLowerCase().includes(lower),
+          );
+ 
+    return matched
+      .sort((a, b) => a.startDateTime.getTime() - b.startDateTime.getTime())
+      .map((e) => this.clone(e));
+  }
+
   async findAll(): Promise<Event[]> {
     return Array.from(this.events.values()).map((e) => this.clone(e));
   }
