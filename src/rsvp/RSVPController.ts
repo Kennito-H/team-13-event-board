@@ -39,9 +39,19 @@ export class RSVPController {
       const partial = htmxTarget.startsWith('rsvp-actions-')
         ? 'rsvp/partials/rsvp-actions'
         : 'rsvp/partials/rsvp-button';
+
+      let waitlistPosition: number | null = null;
+      if (result.value.status === 'waitlisted') {
+        const positionResult = await this.rsvpService.getWaitlistPosition(eventId, currentUser.userId);
+        if (positionResult.ok) {
+          waitlistPosition = positionResult.value;
+        }
+      }
+
       res.render(partial, {
         rsvp: result.value,
         eventId,
+        waitlistPosition,
         layout: false,
       });
     } else {
