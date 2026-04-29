@@ -245,37 +245,19 @@ class EventService implements IEventService {
   
 
   async searchEvents(
-  input: SearchEventsInput,
-): Promise<Result<Event[], EventError>> {
-  try {
+    input: SearchEventsInput,
+  ): Promise<Result<Event[], EventError>> {
     const raw = input.query.trim();
 
     if (raw.length > 200) {
       return Err(ValidationError("Search query is too long (max 200 characters)."));
     }
 
-    const allPublished = await this.eventRepository.findByStatus("published");
     const now = new Date();
-    const upcoming = allPublished.filter((e) => e.startDateTime > now);
-
-    if (raw.length === 0) {
-      return Ok(this.sortByDateAsc(upcoming));
-    }
-
-    const lower = raw.toLowerCase();
-    const matched = upcoming.filter(
-      (e) =>
-        e.title.toLowerCase().includes(lower) ||
-        e.description.toLowerCase().includes(lower) ||
-        e.location.toLowerCase().includes(lower),
-    );
-
-    return Ok(this.sortByDateAsc(matched));
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error in searchEvents";
-    return Err(ValidationError(message));
+    const results = await this.eventRepository.searchPublished(raw, now);
+    return Ok(results); 
   }
-}
+
   private canEditEvent(
     event: Event,
     userId: string,
