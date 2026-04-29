@@ -1,6 +1,6 @@
 import request from "supertest";
 import { createComposedApp } from "../../src/composition";
-import { CreateInMemoryEventRepository } from "../../src/repository/InMemoryEventRepository";
+import { prisma } from "../../src/lib/prisma";
 import type { Event } from "../../src/events/Event";
  
 describe("Event archive endpoints", () => {
@@ -79,13 +79,31 @@ describe("Event archive endpoints", () => {
     updatedAt: past(1),
   };
  
-  CreateInMemoryEventRepository([
+  const testEvents = [
     pastTechEvent,
     pastSocialEvent,
     expiredPublishedEvent,
     futurePublishedEvent,
     cancelledEvent,
-  ]);
+  ];
+  const testEventIds = testEvents.map((e) => e.id);
+  
+  beforeAll(async () => {
+    await prisma.rSVP.deleteMany({ where: { eventId: { in: testEventIds } } });
+    await prisma.event.deleteMany({ where: { id: { in: testEventIds } } });
+    await prisma.event.createMany({
+      data: testEvents.map((e) => ({
+        ...e,
+        capacity: e.capacity ?? null,
+      })),
+    });
+  });
+  
+  afterAll(async () => {
+    await prisma.rSVP.deleteMany({ where: { eventId: { in: testEventIds } } });
+    await prisma.event.deleteMany({ where: { id: { in: testEventIds } } });
+  });
+
  
   const app = createComposedApp().getExpressApp();
  
