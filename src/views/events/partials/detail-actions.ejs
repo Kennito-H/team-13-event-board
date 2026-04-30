@@ -76,7 +76,7 @@
 
     <% } %>
 
-    <% if (event.status === "published") { %>
+    <% if (event.status === "published" && !isOrganizer && !isAdmin) { %>
       <div id="rsvp-action">
             <%- include("../../rsvp/partials/rsvp-button", { eventId: event.id, rsvp, waitlistPosition: typeof waitlistPosition !== 'undefined' ? waitlistPosition : null }) %>
       </div>
