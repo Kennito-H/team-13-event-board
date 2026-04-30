@@ -1,57 +1,68 @@
 <section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
-    <h1 class="text-3xl font-bold text-slate-900 mb-1">My RSVPs</h1>
-    <p class="text-slate-500">Events you have signed up for.</p>
-  </section>
-  
-  <%
-    const now = new Date();
-    const upcoming = rsvpsWithEvents.filter(({ event }) => new Date(event.startDateTime) > now);
-    const past = rsvpsWithEvents.filter(({ event }) => new Date(event.startDateTime) <= now);
-  %>
-  
-  <section class="mb-5">
-    <h2 class="text-xl font-semibold text-slate-800 mb-3">Upcoming</h2>
-  
-    <% if (upcoming.length === 0) { %>
-      <p class="text-slate-500">No upcoming RSVPs.</p>
-    <% } else { %>
-      <ul class="space-y-3">
-        <% for (const { rsvp, event } of upcoming) { %>
-          <li class="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm flex items-center justify-between gap-4">
-            <div>
-              <p class="font-semibold text-slate-900"><%= event.title %></p>
-              <p class="text-sm text-slate-500"><%= event.location %> &middot; <%= new Date(event.startDateTime).toLocaleString() %></p>
-            </div>
-            <%- include('partials/rsvp-actions', { rsvp, eventId: event.id }) %>
-          </li>
-        <% } %>
-      </ul>
-    <% } %>
-  </section>
-  
-  <section>
-    <h2 class="text-xl font-semibold text-slate-800 mb-3">Past</h2>
-  
-    <% if (past.length === 0) { %>
-      <p class="text-slate-500">No past RSVPs.</p>
-    <% } else { %>
-      <ul class="space-y-3">
-        <% for (const { rsvp, event } of past) { %>
-          <li class="p-5 border border-slate-200 rounded-2xl bg-white shadow-sm flex items-center justify-between gap-4 opacity-60">
-            <div>
-              <p class="font-semibold text-slate-900"><%= event.title %></p>
-              <p class="text-sm text-slate-500"><%= event.location %> &middot; <%= new Date(event.startDateTime).toLocaleString() %></p>
-            </div>
-            <% if (rsvp.status === 'going') { %>
-              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Attended</span>
-            <% } else if (rsvp.status === 'waitlisted') { %>
-              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Waitlisted</span>
-            <% } else { %>
-              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">Cancelled</span>
-            <% } %>
-          </li>
-        <% } %>
-      </ul>
-    <% } %>
-  </section>
-  
+  <h1 class="text-3xl font-bold text-slate-900 mb-1">My RSVPs</h1>
+  <p class="text-slate-500">Events you have signed up for.</p>
+</section>
+
+<%
+  const now = new Date();
+  const upcoming = rsvpsWithEvents.filter(({ event }) => new Date(event.startDateTime) > now);
+  const past = rsvpsWithEvents.filter(({ event }) => new Date(event.startDateTime) <= now);
+%>
+
+<section class="mb-6">
+  <div class="flex items-center gap-3 mb-3">
+    <h2 class="text-xl font-semibold text-slate-800">Upcoming</h2>
+    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700"><%= upcoming.length %></span>
+  </div>
+
+  <% if (upcoming.length === 0) { %>
+    <div class="p-6 border border-slate-200 rounded-2xl bg-white text-center">
+      <p class="text-slate-400">No upcoming RSVPs.</p>
+    </div>
+  <% } else { %>
+    <ul class="space-y-3">
+      <% for (const { rsvp, event } of upcoming) { %>
+        <li class="p-5 border border-slate-200 border-l-4 border-l-green-400 rounded-2xl bg-white shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <p class="font-semibold text-slate-900"><%= event.title %></p>
+            <p class="text-sm text-slate-500 mt-0.5"><%= event.location %> &middot; <%= new Date(event.startDateTime).toLocaleString() %></p>
+          </div>
+          <%- include('partials/rsvp-actions', { rsvp, eventId: event.id }) %>
+        </li>
+
+        </li>
+      <% } %>
+    </ul>
+  <% } %>
+</section>
+
+<section>
+  <div class="flex items-center gap-3 mb-3">
+    <h2 class="text-xl font-semibold text-slate-500">Past</h2>
+    <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500"><%= past.length %></span>
+  </div>
+
+  <% if (past.length === 0) { %>
+    <div class="p-6 border border-slate-200 rounded-2xl bg-slate-50 text-center">
+      <p class="text-slate-400">No past RSVPs.</p>
+    </div>
+  <% } else { %>
+    <ul class="space-y-3">
+      <% for (const { rsvp, event } of past) { %>
+        <li class="p-5 border border-slate-200 rounded-2xl bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 opacity-70">
+          <div>
+            <p class="font-semibold text-slate-600"><%= event.title %></p>
+            <p class="text-sm text-slate-400 mt-0.5"><%= event.location %> &middot; <%= new Date(event.startDateTime).toLocaleString() %></p>
+          </div>
+          <% if (rsvp.status === 'going') { %>
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Attended</span>
+          <% } else if (rsvp.status === 'waitlisted') { %>
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Waitlisted</span>
+          <% } else { %>
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">Cancelled</span>
+          <% } %>
+        </li>
+      <% } %>
+    </ul>
+  <% } %>
+</section>
