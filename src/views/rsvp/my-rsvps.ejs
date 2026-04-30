@@ -22,9 +22,8 @@
   <% } else { %>
     <ul class="space-y-3">
       <% for (const { rsvp, event } of upcoming) { %>
-        <li class="p-5 border border-slate-200 border-l-4 border-l-green-400 rounded-2xl bg-white shadow-sm flex items-center justify-between gap-4">
-          <div>
-            <p class="font-semibold text-slate-900"><%= event.title %></p>
+        <li class="p-5 border border-slate-200 border-l-4 border-l-green-400 rounded-2xl bg-white shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <p class="font-semibold text-slate-900"><%= event.title %></p>
             <p class="text-sm text-slate-500 mt-0.5"><%= event.location %> &middot; <%= new Date(event.startDateTime).toLocaleString() %></p>
           </div>
           <%- include('partials/rsvp-actions', { rsvp, eventId: event.id }) %>
@@ -47,7 +46,7 @@
   <% } else { %>
     <ul class="space-y-3">
       <% for (const { rsvp, event } of past) { %>
-        <li class="p-5 border border-slate-200 rounded-2xl bg-slate-50 flex items-center justify-between gap-4 opacity-70">
+        <li class="p-5 border border-slate-200 rounded-2xl bg-slate-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 opacity-70">
           <div>
             <p class="font-semibold text-slate-600"><%= event.title %></p>
             <p class="text-sm text-slate-400 mt-0.5"><%= event.location %> &middot; <%= new Date(event.startDateTime).toLocaleString() %></p>
