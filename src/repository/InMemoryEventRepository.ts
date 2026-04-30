@@ -1,5 +1,5 @@
 import type { Event, EventStatus } from '../events/Event';
-import type { IEventRepository } from './EventRepository';
+import type { IEventRepository, PublishedEventFilters } from './EventRepository';
 
 class InMemoryEventRepository implements IEventRepository {
   private readonly events: Map<string, Event>;
@@ -16,6 +16,27 @@ class InMemoryEventRepository implements IEventRepository {
   async save(event: Event): Promise<Event> {
     this.events.set(event.id, this.clone(event));
     return this.clone(event);
+  }
+
+  async searchPublished(query: string, after: Date): Promise<Event[]> {
+    const lower = query.toLowerCase();
+    const published = Array.from(this.events.values()).filter(
+      (e) => e.status === 'published' && e.startDateTime > after,
+    );
+ 
+    const matched =
+      lower.length === 0
+        ? published
+        : published.filter(
+            (e) =>
+              e.title.toLowerCase().includes(lower) ||
+              e.description.toLowerCase().includes(lower) ||
+              e.location.toLowerCase().includes(lower),
+          );
+ 
+    return matched
+      .sort((a, b) => a.startDateTime.getTime() - b.startDateTime.getTime())
+      .map((e) => this.clone(e));
   }
 
   async findAll(): Promise<Event[]> {
@@ -41,6 +62,18 @@ class InMemoryEventRepository implements IEventRepository {
       .map((e) => this.clone(e));
   }
 
+  async findPublishedFiltered(filters: PublishedEventFilters): Promise<Event[]> {
+    return Array.from(this.events.values())
+      .filter((e) => {
+        if (e.status !== 'published') return false;
+        if (filters.category && e.category !== filters.category) return false;
+        if (filters.startAfter && e.startDateTime < filters.startAfter) return false;
+        if (filters.startBefore && e.startDateTime > filters.startBefore) return false;
+        return true;
+      })
+      .map((e) => this.clone(e))
+      .sort((a, b) => a.startDateTime.getTime() - b.startDateTime.getTime());
+  }
 
   private clone(event: Event): Event {
     return {

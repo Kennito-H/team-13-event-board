@@ -1,6 +1,6 @@
 import request from "supertest";
 import { createComposedApp } from "../../src/composition";
-import { CreateInMemoryEventRepository } from "../../src/repository/InMemoryEventRepository";
+import { prisma } from "../../src/lib/prisma";
 import type { Event } from "../../src/events/Event";
 
 describe("Event transition endpoints", () => {
@@ -49,11 +49,45 @@ describe("Event transition endpoints", () => {
     updatedAt: new Date("2026-04-03T12:00:00.000Z"),
   };
 
-  const eventRepository = CreateInMemoryEventRepository([
-    draftEvent,
-    organizerPublishedEvent,
-    adminCancellableEvent,
-  ]);
+  const testEventIds = [
+    draftEvent.id,
+    organizerPublishedEvent.id,
+    adminCancellableEvent.id,
+    "event-publish-forbidden",
+    "event-cancel-forbidden",
+    "event-publish-already-published",
+    "event-publish-cancelled",
+    "event-cancel-draft",
+    "event-cancel-already-cancelled",
+    "event-cancel-past",
+  ];
+
+  beforeAll(async () => {
+    await prisma.rSVP.deleteMany({ where: { eventId: { in: testEventIds } } });
+    await prisma.event.deleteMany({ where: { id: { in: testEventIds } } });
+
+    await prisma.event.createMany({
+      data: [
+        {
+          ...draftEvent,
+          capacity: draftEvent.capacity ?? null,
+        },
+        {
+          ...organizerPublishedEvent,
+          capacity: organizerPublishedEvent.capacity ?? null,
+        },
+        {
+          ...adminCancellableEvent,
+          capacity: adminCancellableEvent.capacity ?? null,
+        },
+      ],
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.rSVP.deleteMany({ where: { eventId: { in: testEventIds } } });
+    await prisma.event.deleteMany({ where: { id: { in: testEventIds } } });
+  });
 
   const app = createComposedApp().getExpressApp();
 
@@ -96,7 +130,10 @@ describe("Event transition endpoints", () => {
 
     expect(response.headers.location).toBe(`/events/${draftEvent.id}`);
 
-    const savedEvent = await eventRepository.findById(draftEvent.id);
+    const savedEvent = await prisma.event.findUnique({
+      where: { id: draftEvent.id },
+    });
+
 
     expect(savedEvent).not.toBeNull();
     expect(savedEvent?.status).toBe("published");
@@ -111,7 +148,9 @@ describe("Event transition endpoints", () => {
 
     expect(response.headers.location).toBe(`/events/${organizerPublishedEvent.id}`);
 
-    const savedEvent = await eventRepository.findById(organizerPublishedEvent.id);
+    const savedEvent = await prisma.event.findUnique({
+      where: { id: organizerPublishedEvent.id },
+    });
 
     expect(savedEvent).not.toBeNull();
     expect(savedEvent?.status).toBe("cancelled");
@@ -126,7 +165,9 @@ describe("Event transition endpoints", () => {
 
     expect(response.headers.location).toBe(`/events/${adminCancellableEvent.id}`);
 
-    const savedEvent = await eventRepository.findById(adminCancellableEvent.id);
+    const savedEvent = await prisma.event.findUnique({
+      where: { id: adminCancellableEvent.id },
+    });
 
     expect(savedEvent).not.toBeNull();
     expect(savedEvent?.status).toBe("cancelled");
@@ -163,7 +204,12 @@ describe("Event transition endpoints", () => {
         updatedAt: new Date("2026-04-04T12:00:00.000Z"),
     };
 
-    await eventRepository.save(otherUsersDraftEvent);
+    await prisma.event.create({
+      data: {
+        ...otherUsersDraftEvent,
+        capacity: otherUsersDraftEvent.capacity ?? null,
+      },
+    });
 
     const agent = await loginAsUser();
 
@@ -171,7 +217,7 @@ describe("Event transition endpoints", () => {
         .post(`/events/${otherUsersDraftEvent.id}/publish`)
         .expect(403);
 
-    expect(response.text).toContain("Only the organizer can publish this event.");
+    expect(response.text).toContain("Only the organizer or an admin can publish this event.");
     });
 
     it("returns 404 when publishing an event that does not exist", async () => {
@@ -200,7 +246,12 @@ describe("Event transition endpoints", () => {
         updatedAt: new Date("2026-04-05T12:00:00.000Z"),
     };
 
-    await eventRepository.save(staffPublishedEvent);
+    await prisma.event.create({
+      data: {
+        ...staffPublishedEvent,
+        capacity: staffPublishedEvent.capacity ?? null,
+      },
+    });
 
     const agent = await loginAsUser();
 
@@ -237,7 +288,12 @@ describe("Event transition endpoints", () => {
             updatedAt: new Date("2026-04-04T12:00:00.000Z"),
         };
 
-        await eventRepository.save(alreadyPublishedEvent);
+        await prisma.event.create({
+      data: {
+        ...alreadyPublishedEvent,
+        capacity: alreadyPublishedEvent.capacity ?? null,
+      },
+    });
 
         const agent = await loginAsUser();
 
@@ -264,7 +320,12 @@ describe("Event transition endpoints", () => {
             updatedAt: new Date("2026-04-05T12:00:00.000Z"),
         };
 
-        await eventRepository.save(cancelledEvent);
+        await prisma.event.create({
+      data: {
+        ...cancelledEvent,
+        capacity: cancelledEvent.capacity ?? null,
+      },
+    });
 
         const agent = await loginAsUser();
 
@@ -291,7 +352,12 @@ describe("Event transition endpoints", () => {
         updatedAt: new Date("2026-04-06T12:00:00.000Z"),
     };
 
-    await eventRepository.save(draftEvent);
+    await prisma.event.create({
+      data: {
+        ...draftEvent,
+        capacity: draftEvent.capacity ?? null,
+      },
+    });
 
     const agent = await loginAsUser();
 
@@ -318,7 +384,12 @@ describe("Event transition endpoints", () => {
         updatedAt: new Date("2026-04-07T12:00:00.000Z"),
     };
 
-    await eventRepository.save(cancelledEvent);
+    await prisma.event.create({
+      data: {
+        ...cancelledEvent,
+        capacity: cancelledEvent.capacity ?? null,
+      },
+    });
 
     const agent = await loginAsUser();
 
@@ -345,7 +416,12 @@ describe("Event transition endpoints", () => {
         updatedAt: new Date("2026-04-02T12:00:00.000Z"),
     };
 
-    await eventRepository.save(pastEvent);
+    await prisma.event.create({
+      data: {
+        ...pastEvent,
+        capacity: pastEvent.capacity ?? null,
+      },
+    });
 
     const agent = await loginAsUser();
 

@@ -1,4 +1,5 @@
 import type { RSVP, CreateRSVPInput } from './RSVP';
+import type { Event } from '../events/Event';
 
 export interface RSVPRepository {
   findByEventAndUser(eventId: string, userId: string): Promise<RSVP | null>;
@@ -9,4 +10,9 @@ export interface RSVPRepository {
   countWaitlistedBeforeByEvent(eventId: string, before: Date): Promise<number>;
   findById(id: string): Promise<RSVP | null>;
   findFirstWaitlistedByEvent(eventId: string): Promise<RSVP | null>;
+  findByUserIdWithEvents(userId: string): Promise<Array<{ rsvp: RSVP; event: Event }>>;
+  cancelAndPromoteAtomically(
+    rsvpId: string,
+    eventId: string,
+  ): Promise<{ cancelled: RSVP; promoted?: RSVP }>;
 }

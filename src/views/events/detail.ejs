@@ -55,6 +55,9 @@
     <%- include("partials/detail-actions", {
       event,
       rsvp,
+      waitlistPosition: typeof waitlistPosition !== 'undefined' ? waitlistPosition : null,
+      isOrganizer,
+      isAdmin,
       rsvpError,
       transitionError: null,
     }) %>

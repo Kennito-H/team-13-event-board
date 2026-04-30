@@ -71,23 +71,23 @@ export class RSVPService implements IRSVPService{
       const updated = await this.rsvpRepo.update(existingRSVP.id, { status: newStatus });
       return Ok(updated!);
     } else {
-      // Cancel
+      // Cancel — if the user was attending, free their seat and promote the
+      // first waitlisted member atomically.
+      if (existingRSVP.status === 'going') {
+        const { cancelled } = await this.rsvpRepo.cancelAndPromoteAtomically(
+          existingRSVP.id,
+          eventId,
+        );
+        return Ok(cancelled);
+      }
+
       const updated = await this.rsvpRepo.update(existingRSVP.id, { status: 'cancelled' });
       return Ok(updated!);
     }
   }
 
   async getUserRSVPs(userId: string): Promise<Result<RSVPWithEvent[], never>> {
-    const rsvps = await this.rsvpRepo.findByUserId(userId);
-
-    // Join with event details
-    const rsvpsWithEvents: RSVPWithEvent[] = [];
-    for (const rsvp of rsvps) {
-      const event = await this.eventRepo.findById(rsvp.eventId);
-      if (event) {
-        rsvpsWithEvents.push({ rsvp, event });
-      }
-    }
+    const rsvpsWithEvents: RSVPWithEvent[] = await this.rsvpRepo.findByUserIdWithEvents(userId);
 
     // Sort: upcoming first (by event start time), then by RSVP createdAt
     rsvpsWithEvents.sort((a, b) => {
@@ -121,26 +121,17 @@ export class RSVPService implements IRSVPService{
       return Err(new EventNotFoundError('RSVP is already cancelled'));
     }
 
-    const wasGoing = rsvp.status === 'going';
-
-    const cancelled = await this.rsvpRepo.update(rsvpId, { status: 'cancelled' });
-
-    if (!wasGoing) {
+    if (rsvp.status !== 'going') {
+      const cancelled = await this.rsvpRepo.update(rsvpId, { status: 'cancelled' });
       return Ok({ cancelled: cancelled! });
     }
 
-    const nextInLine = await this.rsvpRepo.findFirstWaitlistedByEvent(rsvp.eventId);
-    if (!nextInLine) {
-      return Ok({ cancelled: cancelled! });
-    }
+    const { cancelled, promoted } = await this.rsvpRepo.cancelAndPromoteAtomically(
+      rsvpId,
+      rsvp.eventId,
+    );
 
-    const promoted = await this.rsvpRepo.update(nextInLine.id, { status: 'going' });
-    if (!promoted) {
-      await this.rsvpRepo.update(rsvpId, { status: 'going' });
-      return Err(new EventNotFoundError('Promotion failed, cancellation rolled back'));
-    }
-
-    return Ok({ cancelled: cancelled!, promoted });
+    return Ok({ cancelled, promoted });
   }
 
   async getWaitlistPosition(

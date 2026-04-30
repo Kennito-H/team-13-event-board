@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { createComposedApp } from '../../src/composition';
-import { CreateInMemoryEventRepository } from '../../src/repository/InMemoryEventRepository';
+import { prisma } from '../../src/lib/prisma';
 import type { Event } from '../../src/events/Event';
 
 const seededEvent: Event = {
@@ -18,7 +18,16 @@ const seededEvent: Event = {
   updatedAt: new Date('2027-01-01T00:00:00.000Z'),
 };
 
-CreateInMemoryEventRepository([seededEvent]);
+beforeAll(async () => {
+  await prisma.rSVP.deleteMany({ where: { eventId: seededEvent.id } });
+  await prisma.event.deleteMany({ where: { id: seededEvent.id } });
+  await prisma.event.create({ data: seededEvent });
+});
+
+afterAll(async () => {
+  await prisma.rSVP.deleteMany({ where: { eventId: seededEvent.id } });
+  await prisma.event.deleteMany({ where: { id: seededEvent.id } });
+});
 
 
 const app = createComposedApp().getExpressApp();

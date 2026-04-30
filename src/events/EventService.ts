@@ -40,6 +40,7 @@ export interface IEventService {
   getEventById(
     eventId: string,
     requestingUserId?: string,
+    userRole?: UserRole,
   ): Promise<Result<Event, EventError>>;
 
   updateEvent(
@@ -58,6 +59,7 @@ export interface IEventService {
   publishEvent(
     eventId: string,
     userId: string,
+    userRole: UserRole,
   ): Promise<Result<Event, EventError>>;
 
   cancelEvent(
@@ -96,6 +98,7 @@ class EventService implements IEventService {
   async getEventById(
     eventId: string,
     requestingUserId?: string,
+    userRole?: UserRole,
   ): Promise<Result<Event, EventError>> {
     const event = await this.eventRepository.findById(eventId);
 
@@ -103,10 +106,11 @@ class EventService implements IEventService {
       return Err(NotFoundError("Event does not exist."));
     }
 
-    if (event.status === "draft" && event.organizerId !== requestingUserId) {
-      return Err(
-        UnauthorizedError("Draft events are only visible to the organizer."),
-      );
+    const isOrganizer = event.organizerId === requestingUserId;
+    const isAdmin = userRole === "admin";
+
+    if (event.status === "draft" && !isOrganizer && !isAdmin) {
+      return Err(UnauthorizedError("Draft events are only visible to the organizer or admins."));
     }
 
     return Ok(event);
@@ -173,6 +177,7 @@ class EventService implements IEventService {
   async publishEvent(
     eventId: string,
     userId: string,
+    userRole: UserRole,
   ): Promise<Result<Event, EventError>> {
     const existingEvent = await this.eventRepository.findById(eventId);
 
@@ -180,10 +185,14 @@ class EventService implements IEventService {
       return Err(NotFoundError("Event does not exist."));
     }
 
-    if (existingEvent.organizerId !== userId) {
+    const isOrganizer = existingEvent.organizerId === userId;
+    const isAdmin = userRole === "admin";
+
+
+    if (!isOrganizer && !isAdmin) {
       return Err(
-        UnauthorizedError("Only the organizer can publish this event."),
-      );
+       UnauthorizedError("Only the organizer or an admin can publish this event."),
+     );
     }
 
     if (existingEvent.status !== "draft") {
@@ -236,37 +245,19 @@ class EventService implements IEventService {
   
 
   async searchEvents(
-  input: SearchEventsInput,
-): Promise<Result<Event[], EventError>> {
-  try {
+    input: SearchEventsInput,
+  ): Promise<Result<Event[], EventError>> {
     const raw = input.query.trim();
 
     if (raw.length > 200) {
       return Err(ValidationError("Search query is too long (max 200 characters)."));
     }
 
-    const allPublished = await this.eventRepository.findByStatus("published");
     const now = new Date();
-    const upcoming = allPublished.filter((e) => e.startDateTime > now);
-
-    if (raw.length === 0) {
-      return Ok(this.sortByDateAsc(upcoming));
-    }
-
-    const lower = raw.toLowerCase();
-    const matched = upcoming.filter(
-      (e) =>
-        e.title.toLowerCase().includes(lower) ||
-        e.description.toLowerCase().includes(lower) ||
-        e.location.toLowerCase().includes(lower),
-    );
-
-    return Ok(this.sortByDateAsc(matched));
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error in searchEvents";
-    return Err(ValidationError(message));
+    const results = await this.eventRepository.searchPublished(raw, now);
+    return Ok(results); 
   }
-}
+
   private canEditEvent(
     event: Event,
     userId: string,
@@ -439,29 +430,26 @@ class EventService implements IEventService {
     }
 
     const now = new Date();
-    let startDate: Date | undefined;
-    let endDate: Date | undefined;
+    let startAfter: Date | undefined;
+    let startBefore: Date | undefined;
 
     if (filters.timeframe === "this-week") {
-      startDate = now;
-      endDate = this.endOfWeek(now);
+      startAfter = now;
+      startBefore = this.endOfWeek(now);
     } else if (filters.timeframe === "this-weekend") {
-      startDate = this.startOfUpcomingSaturday(now);
-      endDate = this.endOfUpcomingSunday(now);
+      startAfter = this.startOfUpcomingSaturday(now);
+      startBefore = this.endOfUpcomingSunday(now);
     } else if (filters.timeframe === "upcoming") {
-      startDate = now;
+      startAfter = now;
     }
 
-    const published = await this.eventRepository.findByStatus("published");
-
-    const filtered = published.filter((event) => {
-      if (filters.category && event.category !== filters.category) return false;
-      if (startDate && event.startDateTime < startDate) return false;
-      if (endDate && event.startDateTime > endDate) return false;
-      return true;
+    const events = await this.eventRepository.findPublishedFiltered({
+      category: filters.category,
+      startAfter,
+      startBefore,
     });
 
-    return Ok(this.sortByDateAsc(filtered));
+    return Ok(events);
   }
 
   private endOfWeek(date: Date): Date {
