@@ -6,6 +6,14 @@ datasource db {
   provider = "sqlite"
 }
 
+model User {
+  id           String @id
+  email        String @unique
+  displayName  String
+  role         String
+  passwordHash String
+}
+
 
 model Event {
   id            String   @id @default(cuid())
