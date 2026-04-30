@@ -9,13 +9,18 @@
   </section>
 <% } %>
 
-<section class="border border-slate-200 rounded-2xl bg-white shadow-lg overflow-hidden">
+<section
+  x-data="{ dirty: false }"
+  class="border border-slate-200 rounded-2xl bg-white shadow-lg overflow-hidden"
+>
   <form
     method="POST"
     action="/events/<%= event.id %>/edit"
     hx-post="/events/<%= event.id %>/edit"
     hx-target="#edit-form-panel"
     hx-swap="innerHTML"
+    x-on:input="dirty = true"
+    x-on:change="dirty = true"
     class="p-6 md:p-8"
   >
     <div class="grid gap-5 md:grid-cols-2">
@@ -104,9 +109,14 @@
       </label>
     </div>
 
-    <div class="mt-6 flex items-center justify-end gap-3">
+    <div class="mt-6 flex items-center justify-end gap-3 flex-wrap">
       <a
-        href="/events"
+        href="/dashboard"
+        x-on:click="
+          if (dirty && !confirm('You have unsaved changes. Continue without saving?')) {
+            $event.preventDefault();
+          }
+        "
         class="px-4 py-2.5 rounded-lg bg-white text-slate-700 border border-slate-300 text-sm font-medium no-underline hover:bg-slate-50"
       >
         Cancel
@@ -114,12 +124,20 @@
       <a
         href="/events/<%= event.id %>"
         class="px-4 py-2.5 rounded-lg bg-white text-slate-700 border border-slate-300 text-sm font-medium no-underline hover:bg-slate-50"
+        x-on:click="
+          if (dirty && !confirm('You have unsaved changes. Continue without saving?')) {
+            $event.preventDefault();
+          }
+        "
       >
         View & Publish
       </a>
       <button
         type="submit"
-        class="px-5 py-2.5 rounded-lg bg-sky-600 text-white font-medium cursor-pointer hover:bg-sky-700"
+        class="px-5 py-2.5 rounded-lg bg-sky-600 text-white font-medium cursor-pointer hover:bg-sky-700 transition-[box-shadow,transform,background-color] duration-200 whitespace-nowrap"
+        :class="dirty
+          ? 'ring-4 ring-amber-300 ring-offset-2 shadow-lg'
+          : ''"
       >
         Save Changes
       </button>
