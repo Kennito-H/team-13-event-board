@@ -1,7 +1,13 @@
-<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg flex items-center justify-between">
+  <div>
     <h1 class="text-3xl font-bold text-slate-900 mb-1">Organizer Dashboard</h1>
     <p class="text-slate-500">Events you are organizing.</p>
-  </section>
+  </div>
+  <a href="/events/new" class="px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium no-underline hover:bg-blue-700">
+    + Create Event
+  </a>
+</section>
+
   
   <% if (eventsWithCounts.length === 0) { %>
     <section class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg text-center">
