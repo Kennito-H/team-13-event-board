@@ -80,9 +80,9 @@ export class PrismaEventRepository implements IEventRepository {
             status: 'published' as const,
             startDateTime: { gt: after },
             OR: [
-              { title: { contains: query, mode: 'insensitive' as const } },
-              { description: { contains: query, mode: 'insensitive' as const } },
-              { location: { contains: query, mode: 'insensitive' as const } },
+              { title: { contains: query } },
+              { description: { contains: query } },
+              { location: { contains: query } },
             ],
           };
  
