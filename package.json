@@ -10,7 +10,11 @@
     "test:watch": "jest --watch",
     "prisma:generate": "dotenv -e .env -- prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
+    "db:seed": "npx tsx prisma/seed.ts",
     "clean": "rimraf dist node_modules"
+  },
+  "prisma": {
+  "seed": "npx tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "",

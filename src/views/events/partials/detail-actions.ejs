@@ -13,7 +13,12 @@
   <div class="flex items-center justify-between gap-3 flex-wrap mb-5">
     <div>
       <p class="text-sm uppercase tracking-[0.2em] text-slate-500 font-semibold mb-2">Status</p>
-      <span class="inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold <%= statusClass %>">
+      <span
+        x-data="{ changed: false }"
+        x-init="setTimeout(() => changed = false, 500)"
+        :class="changed ? 'ring-4 ring-purple-300 ring-offset-2 scale-105 shadow-md' : ''"
+        class="inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold transition-all duration-300 <%= statusClass %>"
+      >
         <%= event.status %>
       </span>
     </div>
@@ -71,7 +76,7 @@
 
     <% } %>
 
-    <% if (event.status === "published") { %>
+    <% if (event.status === "published" && !isOrganizer && !isAdmin) { %>
       <div id="rsvp-action">
             <%- include("../../rsvp/partials/rsvp-button", { eventId: event.id, rsvp, waitlistPosition: typeof waitlistPosition !== 'undefined' ? waitlistPosition : null }) %>
       </div>

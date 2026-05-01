@@ -92,17 +92,19 @@ export class RSVPService implements IRSVPService{
     // Sort: upcoming first (by event start time), then by RSVP createdAt
     rsvpsWithEvents.sort((a, b) => {
       const now = new Date();
-      const aUpcoming = new Date(a.event.startDateTime) > now;
-      const bUpcoming = new Date(b.event.startDateTime) > now;
-
-      // Upcoming events first
+      const aTime = new Date(a.event.startDateTime).getTime();
+      const bTime = new Date(b.event.startDateTime).getTime();
+      const aUpcoming = aTime > now.getTime();
+      const bUpcoming = bTime > now.getTime();
+    
       if (aUpcoming !== bUpcoming) {
         return bUpcoming ? -1 : 1;
       }
-
-      // Within same section, older RSVPs first
-      return a.rsvp.createdAt.getTime() - b.rsvp.createdAt.getTime();
+    
+      // Upcoming: soonest first. Past: most recent first.
+      return aUpcoming ? aTime - bTime : bTime - aTime;
     });
+    
 
     return Ok(rsvpsWithEvents);
   }

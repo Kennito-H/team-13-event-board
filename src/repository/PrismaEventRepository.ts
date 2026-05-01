@@ -69,6 +69,30 @@ export class PrismaEventRepository implements IEventRepository {
     return toEvent(row);
   }
 
+  async searchPublished(query: string, after: Date): Promise<Event[]> {
+    const where =
+      query.trim().length === 0
+        ? {
+            status: 'published' as const,
+            startDateTime: { gt: after },
+          }
+        : {
+            status: 'published' as const,
+            startDateTime: { gt: after },
+            OR: [
+              { title: { contains: query, mode: 'insensitive' as const } },
+              { description: { contains: query, mode: 'insensitive' as const } },
+              { location: { contains: query, mode: 'insensitive' as const } },
+            ],
+          };
+ 
+    const rows = await prisma.event.findMany({
+      where,
+      orderBy: { startDateTime: 'asc' },
+    });
+    return rows.map(toEvent);
+  }
+
   async findAll(): Promise<Event[]> {
     const rows = await prisma.event.findMany();
     return rows.map(toEvent);
