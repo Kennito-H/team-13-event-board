@@ -22,7 +22,7 @@
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.0.0",
     "@prisma/client": "^7.0.0",
-    "better-sqlite3": "^11.7.2",
+    "better-sqlite3": "^12.9.0",
     "dotenv": "^17.2.3",
     "ejs": "^4.0.1",
     "express": "^5.2.1",
