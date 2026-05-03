@@ -18,7 +18,7 @@
     <% } else if (rsvp.status === 'waitlisted') { %>
       <% const position = typeof waitlistPosition !== 'undefined' ? waitlistPosition : null; %>
       <% if (position !== null) { %>
-        <p class="mb-2 text-sm text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+        <p class="mb-2 text-sm text-center text-yellow-800 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
           You're <strong>#<%= position %></strong> on the waitlist
         </p>
       <% } %>
