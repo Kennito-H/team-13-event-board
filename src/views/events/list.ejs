@@ -24,7 +24,10 @@
   <%- include("../partials/error", { message: pageError }) %>
 <% } %>
 
-<section class="p-5 border border-slate-200 rounded-2xl bg-white shadow-lg mb-5">
+<section
+  class="p-5 border border-slate-200 rounded-2xl bg-white shadow-lg mb-5"
+  x-data="{ category: '<%= selectedCategory %>', timeframe: '<%= selectedTimeframe %>' }"
+>
   <form
     action="/events"
     method="GET"
@@ -40,9 +43,11 @@
       <input
         type="text"
         name="category"
+        x-model="category"
         value="<%= selectedCategory %>"
         placeholder="Any category"
-        class="px-3 py-2 border rounded-lg bg-white focus:outline-2 focus:outline-blue-500/20 focus:border-blue-500 <%= selectedCategory ? 'border-blue-500 ring-1 ring-blue-500/20' : 'border-slate-300' %>"
+        class="px-3 py-2 border rounded-lg bg-white focus:outline-2 focus:outline-blue-500/20 focus:border-blue-500"
+        :class="category ? 'border-blue-500 ring-1 ring-blue-500/20' : 'border-slate-300'"
       />
     </label>
 
@@ -61,11 +66,14 @@
               type="radio"
               name="timeframe"
               value="<%= tf.value %>"
+              x-model="timeframe"
               class="sr-only peer"
               <%= selectedTimeframe === tf.value ? 'checked' : '' %>
             />
-            <span class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-blue-500/40
-              <%= selectedTimeframe === tf.value ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600' %>">
+            <span
+              class="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium border transition-colors peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-blue-500/40"
+              :class="timeframe === '<%= tf.value %>' ? 'bg-blue-600 border-blue-600 text-white shadow-sm' : 'bg-white border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-600'"
+            >
               <%= tf.label %>
             </span>
           </label>
@@ -73,12 +81,29 @@
       </div>
     </div>
 
-    <button
-      type="submit"
-      class="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium cursor-pointer hover:bg-blue-700 ml-auto"
-    >
-      Apply
-    </button>
+    <div class="flex items-center gap-2 ml-auto">
+      <button
+        type="button"
+        x-show="category || timeframe"
+        style="display: none;"
+        @click="category = ''; timeframe = ''"
+        hx-get="/events"
+        hx-target="#event-list-results"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        class="px-3.5 py-2 rounded-lg bg-white text-slate-700 border border-slate-200 text-sm font-medium cursor-pointer hover:bg-slate-50"
+      >
+        Clear filters
+      </button>
+      <noscript>
+        <button
+          type="submit"
+          class="px-4 py-2 rounded-lg bg-blue-600 text-white font-medium cursor-pointer hover:bg-blue-700"
+        >
+          Apply
+        </button>
+      </noscript>
+    </div>
   </form>
 </section>
 
