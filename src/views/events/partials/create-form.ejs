@@ -20,11 +20,20 @@
           class="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-sky-500/20 focus:border-sky-500" />
       </label>
 
-      <label class="flex flex-col gap-1.5 md:col-span-2">
-        <span class="text-sm font-medium text-slate-700">Description</span>
-        <textarea id="description" name="description" required rows="5"
+      <label x-data="{ count: 0, max: 500 }" class="flex flex-col gap-1.5 md:col-span-2">
+        <div class="flex items-center justify-between">
+          <span class="text-sm font-medium text-slate-700">Description</span>
+          <span class="text-xs font-medium tabular-nums transition-colors"
+            :class="count >= max ? 'text-rose-600' : count >= max * 0.8 ? 'text-amber-500' : 'text-slate-400'"
+          ><span x-text="count">0</span> / <span x-text="max">500</span></span>
+        </div>
+        <textarea
+          x-on:input="count = $event.target.value.length"
+          x-init="count = $el.value.length"
+          id="description" name="description" required rows="5"
+          maxlength="500"
           placeholder="What is happening, who it is for, and what people should expect."
-          class="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-sky-500/20 focus:border-sky-500"
+          class="px-3 py-2.5 border border-slate-300 rounded-xl bg-white focus:outline-2 focus:outline-sky-500/20 focus:border-sky-500 resize-none"
         ><%= (typeof form !== 'undefined' && form.description) ? form.description : '' %></textarea>
       </label>
 
