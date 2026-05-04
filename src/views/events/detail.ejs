@@ -1,3 +1,14 @@
+<script>
+function relativeDay(isoDate) {
+  const diff = Math.round((new Date(isoDate) - new Date()) / 86400000);
+  if (diff === 0) return 'today';
+  if (diff === 1) return 'tomorrow';
+  if (diff === -1) return 'yesterday';
+  if (diff > 1) return 'in ' + diff + ' days';
+  return Math.abs(diff) + ' days ago';
+}
+</script>
+
 <section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-sky-50 shadow-lg">
   <div class="flex items-start justify-between gap-3 flex-wrap">
     <div>
@@ -37,11 +48,17 @@
       <div>
         <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-1">Starts</h3>
         <p class="text-slate-800"><%= new Date(event.startDateTime).toLocaleString() %></p>
+        <p x-data="{ label: relativeDay('<%= new Date(event.startDateTime).toISOString() %>') }"
+           x-text="label"
+           class="text-xs text-slate-400 mt-0.5"></p>
       </div>
 
       <div>
         <h3 class="text-sm font-semibold uppercase tracking-wide text-slate-500 mb-1">Ends</h3>
         <p class="text-slate-800"><%= new Date(event.endDateTime).toLocaleString() %></p>
+        <p x-data="{ label: relativeDay('<%= new Date(event.endDateTime).toISOString() %>') }"
+           x-text="label"
+           class="text-xs text-slate-400 mt-0.5"></p>
       </div>
 
       <div>
