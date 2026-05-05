@@ -4,7 +4,7 @@
   <section class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg text-center">
     <% if (query && query.trim().length > 0) { %>
       <p class="text-slate-500 mb-1">No published upcoming events match <strong class="text-slate-700">"<%= query %>"</strong>.</p>
-      <p class="text-sm text-slate-400">Try a different search term.</p>
+      <p class="text-sm text-slate-400">Try a different search term or <a href="/events/search" class="text-blue-600 hover:underline">clear the search</a>.</p>
     <% } else { %>
       <p class="text-slate-500">No published upcoming events found.</p>
     <% } %>
@@ -17,11 +17,10 @@
       <%= events.length %> upcoming event<%= events.length === 1 ? '' : 's' %>
     <% } %>
   </p>
-
   <ul class="list-none m-0 p-0 grid gap-3.5">
     <% for (const event of events) { %>
-      <li class="p-5 border border-slate-200 rounded-2xl bg-white shadow-lg">
-        <div class="flex items-center justify-between gap-3 mb-2">
+      <li class="p-5 border border-slate-200 rounded-2xl bg-white shadow-lg hover:shadow-md transition-shadow">
+        <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
           <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-600/10 text-blue-700">
             <%= event.category %>
           </span>
