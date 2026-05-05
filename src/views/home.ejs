@@ -96,6 +96,7 @@
           Manage Users
         </a>
       <% } %>
+
     </div>
   </div>
 
@@ -115,4 +116,289 @@
       </dl>
     <% } %>
   </aside>
+
 </section>
+
+<style>
+  @keyframes net-jiggle {
+    0%,100% { transform: scaleX(1) scaleY(1) skewX(0deg); }
+    18%  { transform: scaleX(1.09) scaleY(0.92) skewX(4deg); }
+    36%  { transform: scaleX(0.92) scaleY(1.08) skewX(-3deg); }
+    54%  { transform: scaleX(1.06) scaleY(0.96) skewX(2deg); }
+    72%  { transform: scaleX(0.97) scaleY(1.03) skewX(-1deg); }
+    90%  { transform: scaleX(1.02) scaleY(0.99); }
+  }
+  .net-swish {
+    animation: net-jiggle 0.55s ease-in-out;
+    transform-box: fill-box;
+    transform-origin: center top;
+  }
+</style>
+
+<section class="mt-5" x-data="basketballGame()">
+
+  <div class="flex items-center gap-3 mb-4">
+    <h2 class="text-xl font-semibold text-slate-900">Basketball</h2>
+    <span class="px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-semibold">Mini Game</span>
+  </div>
+
+  <div class="flex items-center justify-between mb-4 px-6 py-4 bg-slate-900 text-white rounded-2xl shadow-lg select-none">
+    <div class="text-center min-w-[4.5rem]">
+      <div class="text-4xl font-black font-mono leading-none" x-text="score"></div>
+      <div class="text-xs text-slate-400 uppercase tracking-widest mt-1">Points</div>
+    </div>
+    <div class="text-center flex-1 px-3">
+      <div x-show="streak >= 3" class="text-orange-400 font-bold text-sm" x-text="'🔥 ' + streak + ' in a row!'"></div>
+      <div x-show="streak < 3 && attempts > 0" class="text-slate-400 text-sm font-mono" x-text="Math.round(made / attempts * 100) + '% FG'"></div>
+      <div x-show="attempts === 0" class="text-slate-600 text-sm">Ready?</div>
+    </div>
+    <div class="text-center min-w-[4.5rem]">
+      <div class="text-xl font-bold font-mono leading-none">
+        <span x-text="made"></span><span class="text-slate-500 font-normal">/</span><span x-text="attempts"></span>
+      </div>
+      <div class="text-xs text-slate-400 uppercase tracking-widest mt-1">Makes</div>
+    </div>
+  </div>
+
+  <div class="relative rounded-2xl overflow-hidden shadow-2xl bg-slate-900 select-none">
+
+    <div class="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+      <div x-show="scored"
+           x-transition:enter="transition duration-150"
+           x-transition:enter-start="opacity-0 scale-50"
+           x-transition:enter-end="opacity-100 scale-100"
+           x-transition:leave="transition duration-500"
+           x-transition:leave-start="opacity-100 scale-100"
+           x-transition:leave-end="opacity-0 scale-125"
+           class="text-5xl font-black text-yellow-300"
+           style="text-shadow: 0 0 30px rgba(250,204,21,0.9), 0 0 60px rgba(250,204,21,0.5)">
+        SWISH! 🔥
+      </div>
+      <div x-show="missed"
+           x-transition:enter="transition duration-150"
+           x-transition:enter-start="opacity-0 scale-50"
+           x-transition:enter-end="opacity-100 scale-100"
+           x-transition:leave="transition duration-500"
+           x-transition:leave-start="opacity-100"
+           x-transition:leave-end="opacity-0"
+           class="text-4xl font-black text-red-400 drop-shadow-lg">
+        Clank! 😬
+      </div>
+    </div>
+
+    <svg viewBox="0 0 560 380" xmlns="http://www.w3.org/2000/svg" class="w-full block">
+      <defs>
+        <linearGradient id="bk-wallGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#0f172a"/>
+          <stop offset="65%"  stop-color="#1e3a5f"/>
+          <stop offset="100%" stop-color="#162840"/>
+        </linearGradient>
+        <linearGradient id="bk-floorGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stop-color="#c8780a"/>
+          <stop offset="100%" stop-color="#9a5a08"/>
+        </linearGradient>
+        <radialGradient id="bk-ballGrad" cx="38%" cy="33%" r="65%">
+          <stop offset="0%"   stop-color="#fcd34d"/>
+          <stop offset="45%"  stop-color="#f97316"/>
+          <stop offset="100%" stop-color="#c2400a"/>
+        </radialGradient>
+        <radialGradient id="bk-hoopSpot" cx="50%" cy="50%" r="50%">
+          <stop offset="0%"   stop-color="rgba(249,115,22,0.2)"/>
+          <stop offset="100%" stop-color="rgba(249,115,22,0)"/>
+        </radialGradient>
+      </defs>
+
+      <rect width="560" height="380" fill="url(#bk-wallGrad)"/>
+      <ellipse cx="140" cy="0" rx="130" ry="90" fill="rgba(59,130,246,0.06)"/>
+      <ellipse cx="420" cy="0" rx="130" ry="90" fill="rgba(59,130,246,0.06)"/>
+
+      <rect x="0" y="198" width="560" height="28" fill="rgba(0,0,0,0.45)"/>
+      <ellipse cx="35"  cy="208" rx="17" ry="11" fill="#0a1628"/>
+      <ellipse cx="75"  cy="203" rx="19" ry="13" fill="#0a1628"/>
+      <ellipse cx="118" cy="210" rx="16" ry="11" fill="#0a1628"/>
+      <ellipse cx="158" cy="204" rx="18" ry="12" fill="#0a1628"/>
+      <ellipse cx="202" cy="209" rx="17" ry="11" fill="#0a1628"/>
+      <ellipse cx="248" cy="202" rx="20" ry="13" fill="#0a1628"/>
+      <ellipse cx="295" cy="207" rx="17" ry="12" fill="#0a1628"/>
+      <ellipse cx="340" cy="203" rx="19" ry="13" fill="#0a1628"/>
+      <ellipse cx="385" cy="208" rx="17" ry="11" fill="#0a1628"/>
+      <ellipse cx="430" cy="202" rx="20" ry="13" fill="#0a1628"/>
+      <ellipse cx="475" cy="209" rx="16" ry="11" fill="#0a1628"/>
+      <ellipse cx="520" cy="204" rx="18" ry="12" fill="#0a1628"/>
+
+      <rect y="325" width="560" height="55" fill="url(#bk-floorGrad)"/>
+      <line x1="0" y1="325" x2="560" y2="325" stroke="#f0a825" stroke-width="2.5"/>
+      <line x1="0" y1="336" x2="560" y2="336" stroke="#b07010" stroke-width="0.6" opacity="0.5"/>
+      <line x1="0" y1="347" x2="560" y2="347" stroke="#b07010" stroke-width="0.6" opacity="0.5"/>
+      <line x1="0" y1="358" x2="560" y2="358" stroke="#b07010" stroke-width="0.6" opacity="0.5"/>
+      <line x1="0" y1="369" x2="560" y2="369" stroke="#b07010" stroke-width="0.6" opacity="0.5"/>
+      <path d="M 72 325 Q 280 242 488 325" fill="none" stroke="#f0a825" stroke-width="2" stroke-dasharray="9,5" opacity="0.7"/>
+
+      <rect x="527" y="172" width="11" height="153" fill="#334155" rx="3"/>
+      <rect x="500" y="48"  width="15" height="132" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5" rx="2"/>
+      <rect x="503" y="76"  width="9"  height="56"  fill="none"    stroke="#dc2626" stroke-width="2"   rx="1"/>
+
+      <rect x="422" y="150" width="78" height="7"  fill="#b83a08" rx="3.5"/>
+      <rect x="422" y="156" width="78" height="9"  fill="#ea6020" rx="3"/>
+      <ellipse cx="461" cy="166" rx="56" ry="13" fill="url(#bk-hoopSpot)"/>
+
+      <g :class="netJiggling ? 'net-swish' : ''">
+        <g fill="none">
+          <path d="M 425 165 L 440 220 L 484 220 L 499 165" stroke="#94a3b8" stroke-width="1.5" stroke-linejoin="round"/>
+          <line x1="430" y1="165" x2="440" y2="220" stroke="#cbd5e1" stroke-width="1.2"/>
+          <line x1="441" y1="165" x2="448" y2="220" stroke="#cbd5e1" stroke-width="1.2"/>
+          <line x1="451" y1="165" x2="455" y2="220" stroke="#cbd5e1" stroke-width="1.2"/>
+          <line x1="461" y1="165" x2="462" y2="220" stroke="#cbd5e1" stroke-width="1.2"/>
+          <line x1="471" y1="165" x2="469" y2="220" stroke="#cbd5e1" stroke-width="1.2"/>
+          <line x1="481" y1="165" x2="476" y2="220" stroke="#cbd5e1" stroke-width="1.2"/>
+          <line x1="492" y1="165" x2="483" y2="220" stroke="#cbd5e1" stroke-width="1.2"/>
+          <path d="M 428 181 Q 462 185 497 181" stroke="#cbd5e1" stroke-width="1.1"/>
+          <path d="M 431 196 Q 462 199 494 196" stroke="#cbd5e1" stroke-width="1.1"/>
+          <path d="M 435 209 Q 462 212 489 209" stroke="#cbd5e1" stroke-width="1.1"/>
+        </g>
+      </g>
+
+      <g opacity="0.26" stroke="#3b82f6" stroke-linecap="round" fill="none">
+        <circle cx="52" cy="248" r="11" fill="#3b82f6" stroke="none"/>
+        <line x1="52" y1="259" x2="52" y2="296" stroke-width="9"/>
+        <line x1="52" y1="268" x2="77" y2="278" stroke-width="6"/>
+        <line x1="52" y1="270" x2="33" y2="282" stroke-width="6"/>
+        <line x1="52" y1="296" x2="38" y2="325" stroke-width="8"/>
+        <line x1="52" y1="296" x2="66" y2="325" stroke-width="8"/>
+        <line x1="38" y1="325" x2="29" y2="325" stroke-width="5"/>
+        <line x1="66" y1="325" x2="75" y2="325" stroke-width="5"/>
+      </g>
+
+      <ellipse :opacity="shooting ? '0' : '1'" cx="80" cy="323" rx="22" ry="5" fill="rgba(0,0,0,0.38)"/>
+
+      <g :transform="`translate(${ballX - 80}, ${ballY - 300}) rotate(${ballRotation}, 80, 300)`"
+         :style="shooting ? 'filter: drop-shadow(0 0 10px rgba(249,115,22,0.65))' : ''">
+        <circle cx="80" cy="300" r="24" fill="url(#bk-ballGrad)"/>
+        <path d="M 57 300 Q 80 277 103 300" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M 57 300 Q 80 323 103 300" fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M 80 277 Q 103 300 80 323"  fill="none" stroke="#1a1a1a" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="69" cy="289" r="6" fill="rgba(255,255,255,0.24)"/>
+        <circle cx="67" cy="287" r="2" fill="rgba(255,255,255,0.45)"/>
+      </g>
+
+      <rect x="422" y="155" width="78" height="7" fill="#f97316" rx="3"/>
+      <rect x="422" y="155" width="78" height="2" fill="rgba(255,210,110,0.45)" rx="2"/>
+    </svg>
+  </div>
+
+  <div class="flex gap-3 mt-4 select-none">
+    <button
+      @click="shoot()"
+      :disabled="shooting"
+      class="flex-1 py-3.5 px-6 rounded-xl font-bold text-lg text-white shadow-lg
+             bg-orange-500 hover:bg-orange-600 active:scale-95 transition-all
+             disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+    >
+      🏀 Shoot the Ball
+    </button>
+    <button
+      @click="reset()"
+      :disabled="shooting"
+      class="py-3.5 px-5 rounded-xl font-medium text-slate-700 bg-white border border-slate-200
+             hover:bg-slate-50 active:scale-95 transition-all shadow
+             disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      Reset
+    </button>
+  </div>
+
+</section>
+
+<script>
+  function basketballGame() {
+    return {
+      ballX: 80, ballY: 300, ballRotation: 0,
+      shooting: false, scored: false, missed: false, netJiggling: false,
+      score: 0, attempts: 0, made: 0, streak: 0,
+
+      lerp(a, b, t) { return a + (b - a) * t; },
+
+      bezier(p0, ctrl, p1, t) {
+        const mt = 1 - t;
+        return mt * mt * p0 + 2 * mt * t * ctrl + t * t * p1;
+      },
+
+      easeInOut(t) {
+        return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      },
+
+      shoot() {
+        if (this.shooting) return;
+        this.shooting = true;
+        this.scored = false;
+        this.missed = false;
+        this.attempts++;
+
+        const willMiss = Math.random() < 0.25;
+        const sx = 80, sy = 300, cx = 220, cy = 15;
+        const ex = willMiss ? 424 : 461;
+        const ey = willMiss ? 163 : 161;
+        const duration = 850;
+        const startTime = performance.now();
+
+        const animate = (now) => {
+          const raw = Math.min((now - startTime) / duration, 1);
+          const t = this.easeInOut(raw);
+          this.ballX = this.bezier(sx, cx, ex, t);
+          this.ballY = this.bezier(sy, cy, ey, t);
+          this.ballRotation = raw * 700;
+          if (raw < 1) {
+            requestAnimationFrame(animate);
+          } else if (!willMiss) {
+            this.onMake();
+          } else {
+            this.onMiss();
+          }
+        };
+        requestAnimationFrame(animate);
+      },
+
+      onMake() {
+        this.score += 2;
+        this.made++;
+        this.streak++;
+        this.scored = true;
+        this.netJiggling = true;
+        setTimeout(() => { this.netJiggling = false; }, 560);
+        setTimeout(() => { this.scored = false; this.resetBall(); }, 1100);
+      },
+
+      onMiss() {
+        this.streak = 0;
+        this.missed = true;
+        const bx = this.ballX, by = this.ballY, br = this.ballRotation;
+        const fallDuration = 640;
+        const startTime = performance.now();
+        const fall = (now) => {
+          const t = Math.min((now - startTime) / fallDuration, 1);
+          const et = t * t;
+          this.ballX = bx + this.lerp(0, 58, t);
+          this.ballY = by + this.lerp(0, 235, et);
+          this.ballRotation = br + t * 215;
+          if (t < 1) {
+            requestAnimationFrame(fall);
+          } else {
+            setTimeout(() => { this.missed = false; this.resetBall(); }, 320);
+          }
+        };
+        requestAnimationFrame(fall);
+      },
+
+      resetBall() {
+        this.ballX = 80; this.ballY = 300; this.ballRotation = 0; this.shooting = false;
+      },
+
+      reset() {
+        if (this.shooting) return;
+        Object.assign(this, { score: 0, attempts: 0, made: 0, streak: 0,
+          scored: false, missed: false, netJiggling: false });
+        this.resetBall();
+      },
+    };
+  }
+</script>
