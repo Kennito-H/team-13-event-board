@@ -721,26 +721,30 @@ class EventController implements IEventController {
     userRole: UserRole,
     session?: IAppBrowserSession,
   ): Promise<void> {
-    const result = await this.eventService.getOrganizerEvents(userId, userRole);
-
-    if (result.ok === false) {
+    const [eventsResult, analyticsResult] = await Promise.all([
+      this.eventService.getOrganizerEvents(userId, userRole),
+      this.eventService.getOrganizerAnalytics(userId),
+    ]);
+  
+    if (eventsResult.ok === false) {
       res.status(500).render('partials/error', { message: 'Unexpected server error.', layout: false });
       return;
     }
-
-    const events = result.value;
-
+  
     const eventsWithCounts = await Promise.all(
-      events.map(async (event) => {
+      eventsResult.value.map(async (event) => {
         const going = this.rsvpRepository
           ? await this.rsvpRepository.countActiveByEvent(event.id)
           : 0;
         return { event, going };
       }),
     );
-
-    res.render('events/orgDashboard', { eventsWithCounts, session });
+  
+    const analytics = analyticsResult.ok ? analyticsResult.value : null;
+  
+    res.render('events/orgDashboard', { eventsWithCounts, analytics, session });
   }
+  
 }
 
 export function CreateEventController(
