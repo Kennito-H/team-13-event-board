@@ -6,7 +6,11 @@
   </section>
 <% } else { %>
   <p class="text-sm text-slate-500 mb-3">
-    <%= events.length %> event<%= events.length === 1 ? '' : 's' %>
+    <% if (typeof selectedQuery !== 'undefined' && selectedQuery.trim().length > 0) { %>
+      <%= events.length %> result<%= events.length === 1 ? '' : 's' %> for <strong class="text-slate-700">"<%= selectedQuery %>"</strong>
+    <% } else { %>
+      <%= events.length %> event<%= events.length === 1 ? '' : 's' %>
+    <% } %>
   </p>
 
   <ul class="list-none m-0 p-0 grid gap-3.5">

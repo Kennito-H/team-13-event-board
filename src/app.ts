@@ -548,6 +548,7 @@ class ExpressApp implements IApp {
         await this.eventController.showEventList(res,browserSession, {
             category: typeof req.query.category === "string" ? req.query.category : undefined,
             timeframe: typeof req.query.timeframe === "string" ? req.query.timeframe : undefined,
+            query: typeof req.query.q === "string" ? req.query.q : "",
           },
           this.isHtmxRequest(req),
         );

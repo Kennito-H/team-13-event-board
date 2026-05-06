@@ -79,7 +79,8 @@ export interface IEventService {
   getArchivedCategories(): Promise<Result<string[], EventError>>;
   
   listEvents(
-    filters: EventFilters
+    filters: EventFilters,
+    query?: string,
   ): Promise<Result<Event[], EventError>>;
 
   createEvent(input: CreateEventInput): Promise<Result<Event, EventError>>;
@@ -419,7 +420,7 @@ class EventService implements IEventService {
     return null;
   }
 
-  async listEvents(filters: EventFilters): Promise<Result<Event[], EventError>> {
+  async listEvents(filters: EventFilters, query: string = ""): Promise<Result<Event[], EventError>> {
     if (filters.category && filters.category.length > 100) {
       return Err(ValidationError("Category filter is too long (max 100 characters)."));
     }
@@ -448,6 +449,17 @@ class EventService implements IEventService {
       startAfter,
       startBefore,
     });
+
+    if (query.trim().length > 0) {
+      const lower = query.trim().toLowerCase();
+      const searched = events.filter(
+        (e) =>
+          e.title.toLowerCase().includes(lower) ||
+          e.description.toLowerCase().includes(lower) ||
+          e.location.toLowerCase().includes(lower),
+      );
+      return Ok(searched);
+    }
 
     return Ok(events);
   }
