@@ -1,5 +1,17 @@
 import type { Event, EventStatus } from '../events/Event';
 
+export interface EventAnalyticsRow {
+  eventId: string;
+  title: string;
+  status: EventStatus;
+  capacity: number | undefined;
+  goingCount: number;
+  waitlistedCount: number;
+  startDateTime: Date;
+  category: string;
+}
+
+
 export interface PublishedEventFilters {
   category?: string;
   startAfter?: Date;
@@ -15,4 +27,5 @@ export interface IEventRepository {
   updateStatus(id: string, status: EventStatus): Promise<Event | null>;
   findByOrganizer(organizerId: string): Promise<Event[]>;
   findPublishedFiltered(filters: PublishedEventFilters): Promise<Event[]>;
+  getOrganizerAnalytics(organizerId: string): Promise<EventAnalyticsRow[]>;
 }
