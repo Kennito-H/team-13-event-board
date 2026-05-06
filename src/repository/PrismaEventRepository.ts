@@ -1,5 +1,5 @@
 import type { Event, EventStatus } from '../events/Event';
-import type { IEventRepository, PublishedEventFilters } from './EventRepository';
+import type { IEventRepository, PublishedEventFilters, EventAnalyticsRow } from './EventRepository';
 import { prisma } from '../lib/prisma';
 
 function toEvent(row: {
@@ -135,6 +135,25 @@ export class PrismaEventRepository implements IEventRepository {
     });
     return rows.map(toEvent);
   }
+
+  async getOrganizerAnalytics(organizerId: string): Promise<EventAnalyticsRow[]> {
+    const rows = await prisma.event.findMany({
+      where: { organizerId },
+      include: { rsvps: { select: { status: true } } },
+      orderBy: { startDateTime: 'desc' },
+    });
+    return rows.map((row) => ({
+      eventId: row.id,
+      title: row.title,
+      status: row.status as EventStatus,
+      capacity: row.capacity ?? undefined,
+      goingCount: row.rsvps.filter((r) => r.status === 'going').length,
+      waitlistedCount: row.rsvps.filter((r) => r.status === 'waitlisted').length,
+      startDateTime: row.startDateTime,
+      category: row.category,
+    }));
+  }
+
 }
 
 export function CreatePrismaEventRepository(): IEventRepository {
