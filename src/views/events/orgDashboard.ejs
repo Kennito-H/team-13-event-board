@@ -8,6 +8,112 @@
   </a>
 </section>
 
+<% if (analytics) { %>
+  <section class="mb-5" x-data="{ showBreakdown: false }">
+  
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <p class="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-0.5">Optional Feature</p>
+        <h2 class="text-lg font-semibold text-slate-800">Event Analytics</h2>
+      </div>
+      <button @click="showBreakdown = !showBreakdown"
+              class="text-xs text-blue-600 hover:text-blue-800 font-medium bg-transparent border-0 cursor-pointer">
+        <span x-text="showBreakdown ? 'Hide breakdown' : 'Show breakdown'"></span>
+      </button>
+    </div>
+  
+    <%# Stat cards %>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+      <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Total Events</p>
+        <p class="text-3xl font-black text-slate-900"><%= analytics.totalEvents %></p>
+      </div>
+      <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Total Attendees</p>
+        <p class="text-3xl font-black text-slate-900"><%= analytics.totalAttendees %></p>
+      </div>
+      <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Avg Fill Rate</p>
+        <p class="text-3xl font-black text-slate-900">
+          <% if (analytics.avgFillRate !== null) { %>
+            <%= Math.round(analytics.avgFillRate * 100) %>%
+          <% } else { %>
+            <span class="text-slate-400">N/A</span>
+          <% } %>
+        </p>
+      </div>
+      <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Top Event</p>
+        <% if (analytics.topEvent) { %>
+          <p class="text-sm font-bold text-slate-900 leading-tight truncate"><%= analytics.topEvent.title %></p>
+          <p class="text-xs text-slate-400 mt-0.5"><%= analytics.topEvent.goingCount %> going</p>
+        <% } else { %>
+          <p class="text-3xl font-black text-slate-400">N/A</p>
+        <% } %>
+      </div>
+    </div>
+  
+    <%# Per-event breakdown (collapsible with Alpine.js) %>
+    <div x-show="showBreakdown"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-1"
+         x-transition:enter-end="opacity-100 translate-y-0">
+      <div class="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600">Event</th>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600">Category</th>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600 whitespace-nowrap">Going</th>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600 whitespace-nowrap">Waitlisted</th>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600 whitespace-nowrap">Fill Rate</th>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <% for (const row of analytics.rows) { %>
+              <%
+                const fillPct = row.capacity ? Math.round(row.goingCount / row.capacity * 100) : null;
+                const barColor = fillPct === null ? '' : fillPct >= 90 ? 'bg-red-400' : fillPct >= 60 ? 'bg-yellow-400' : 'bg-green-400';
+              %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-5 py-3">
+                  <a href="/events/<%= row.eventId %>" class="font-medium text-slate-800 hover:text-blue-700 no-underline"><%= row.title %></a>
+                </td>
+                <td class="px-5 py-3 text-slate-500 capitalize"><%= row.category %></td>
+                <td class="px-5 py-3 text-slate-700 font-medium"><%= row.goingCount %></td>
+                <td class="px-5 py-3 text-slate-500"><%= row.waitlistedCount %></td>
+                <td class="px-5 py-3">
+                  <% if (fillPct !== null) { %>
+                    <div class="flex items-center gap-2">
+                      <div class="w-16 bg-slate-100 rounded-full h-1.5">
+                        <div class="<%= barColor %> h-1.5 rounded-full" style="width: <%= Math.min(fillPct, 100) %>%"></div>
+                      </div>
+                      <span class="text-slate-600 text-xs"><%= fillPct %>%</span>
+                    </div>
+                  <% } else { %>
+                    <span class="text-slate-400 text-xs">No cap</span>
+                  <% } %>
+                </td>
+                <td class="px-5 py-3">
+                  <span class="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap
+                    <%= row.status === 'published' ? 'bg-green-100 text-green-700' :
+                        row.status === 'draft'     ? 'bg-yellow-100 text-yellow-700' :
+                                                     'bg-slate-100 text-slate-500' %>">
+                    <%= row.status %>
+                  </span>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  
+  </section>
+  <% } %>
+  
+
 <%
   const published = eventsWithCounts.filter(({ event }) => event.status === 'published');
   const draft = eventsWithCounts.filter(({ event }) => event.status === 'draft');
