@@ -1,5 +1,5 @@
 import { Err, Ok, type Result } from "../lib/result";
-import type { IEventRepository } from "../repository/EventRepository";
+import type { IEventRepository, EventAnalyticsRow } from "../repository/EventRepository";
 import type { Event } from "./Event";
 import type { UpdateEventInput } from "./UpdateEventInput";
 import {
@@ -34,6 +34,14 @@ export type Timeframe = "upcoming" | "this-week" | "this-weekend";
 export interface EventFilters {
   category?: string;
   timeframe?: string;
+}
+
+export interface OrganizerAnalytics {
+  totalEvents: number;
+  totalAttendees: number;
+  avgFillRate: number | null;
+  topEvent: { eventId: string; title: string; goingCount: number } | null;
+  rows: EventAnalyticsRow[];
 }
 
 export interface IEventService {
@@ -90,6 +98,7 @@ export interface IEventService {
     userRole: UserRole,
   ): Promise<Result<Event[], EventError>>;
 
+  getOrganizerAnalytics(userId: string): Promise<Result<OrganizerAnalytics, EventError>>;
 
 }
 
@@ -372,7 +381,34 @@ class EventService implements IEventService {
     return Ok(events);
   }
 
+  async getOrganizerAnalytics(userId: string): Promise<Result<OrganizerAnalytics, EventError>> {
+    const rows = await this.eventRepository.getOrganizerAnalytics(userId);
 
+    const totalEvents = rows.length;
+    const totalAttendees = rows.reduce((sum, r) => sum + r.goingCount, 0);
+
+    const withCapacity = rows.filter((r) => r.capacity !== undefined && r.capacity > 0);
+    const avgFillRate =
+      withCapacity.length > 0
+        ? withCapacity.reduce((sum, r) => sum + r.goingCount / r.capacity!, 0) /
+          withCapacity.length
+        : null;
+
+    const topEvent =
+      rows.length > 0
+        ? rows.reduce((best, r) => (r.goingCount > best.goingCount ? r : best))
+        : null;
+
+    return Ok({
+      totalEvents,
+      totalAttendees,
+      avgFillRate,
+      topEvent: topEvent
+        ? { eventId: topEvent.eventId, title: topEvent.title, goingCount: topEvent.goingCount }
+        : null,
+      rows,
+    });
+  }
 
   private validateUpdateInput(updates: UpdateEventInput): EventError | null {
     if (!updates.title || updates.title.trim().length === 0) {
