@@ -1,18 +1,43 @@
 <div id="rsvp-actions-<%= rsvp.id %>" class="flex items-center gap-3 shrink-0">
-    <% if (rsvp.status === 'going') { %>
-      <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Going</span>
-    <% } else if (rsvp.status === 'waitlisted') { %>
-      <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Waitlisted</span>
-    <% } else { %>
-      <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">Cancelled</span>
-    <% } %>
+  <% if (rsvp.status === 'going') { %>
+    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">Going</span>
+  <% } else if (rsvp.status === 'waitlisted') { %>
+    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">Waitlisted</span>
+  <% } else { %>
+    <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-500">Cancelled</span>
+  <% } %>
+
+  <% if (rsvp.status === 'cancelled') { %>
     <form method="POST" action="/events/<%= eventId %>/rsvp" class="m-0"
           hx-post="/events/<%= eventId %>/rsvp"
           hx-target="#rsvp-actions-<%= rsvp.id %>"
           hx-swap="outerHTML">
       <button type="submit" class="px-3 py-1.5 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer">
-        <%= rsvp.status === 'cancelled' ? 'Re-RSVP' : 'Cancel RSVP' %>
+        Re-RSVP
       </button>
     </form>
-  </div>
-  
+  <% } else { %>
+    <div x-data="{ confirming: false }">
+      <button x-show="!confirming"
+              @click.prevent="confirming = true"
+              class="px-3 py-1.5 rounded-lg border border-red-200 text-sm text-red-600 hover:bg-red-50 cursor-pointer">
+        Cancel RSVP
+      </button>
+      <div x-show="confirming" class="flex items-center gap-2">
+        <span class="text-sm text-slate-600 whitespace-nowrap">Are you sure?</span>
+        <button @click="confirming = false"
+                class="px-2.5 py-1 rounded-lg border border-slate-200 text-xs text-slate-600 hover:bg-slate-50 cursor-pointer">
+          No
+        </button>
+        <form method="POST" action="/events/<%= eventId %>/rsvp" class="m-0"
+              hx-post="/events/<%= eventId %>/rsvp"
+              hx-target="#rsvp-actions-<%= rsvp.id %>"
+              hx-swap="outerHTML">
+          <button type="submit" class="px-2.5 py-1 rounded-lg bg-red-600 text-white text-xs font-medium cursor-pointer hover:bg-red-700">
+            Yes, cancel
+          </button>
+        </form>
+      </div>
+    </div>
+  <% } %>
+</div>

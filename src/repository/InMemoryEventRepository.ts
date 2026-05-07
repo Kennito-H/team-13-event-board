@@ -1,5 +1,5 @@
 import type { Event, EventStatus } from '../events/Event';
-import type { IEventRepository, PublishedEventFilters } from './EventRepository';
+import type { IEventRepository, PublishedEventFilters, EventAnalyticsRow } from './EventRepository';
 
 class InMemoryEventRepository implements IEventRepository {
   private readonly events: Map<string, Event>;
@@ -74,6 +74,22 @@ class InMemoryEventRepository implements IEventRepository {
       .map((e) => this.clone(e))
       .sort((a, b) => a.startDateTime.getTime() - b.startDateTime.getTime());
   }
+
+  async getOrganizerAnalytics(organizerId: string): Promise<EventAnalyticsRow[]> {
+    return Array.from(this.events.values())
+      .filter((e) => e.organizerId === organizerId)
+      .map((e) => ({
+        eventId: e.id,
+        title: e.title,
+        status: e.status,
+        capacity: e.capacity,
+        goingCount: 0,
+        waitlistedCount: 0,
+        startDateTime: e.startDateTime,
+        category: e.category,
+      }));
+  }
+
 
   private clone(event: Event): Event {
     return {

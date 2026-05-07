@@ -1,5 +1,5 @@
 import { Err, Ok, type Result } from "../lib/result";
-import type { IEventRepository } from "../repository/EventRepository";
+import type { IEventRepository, EventAnalyticsRow } from "../repository/EventRepository";
 import type { Event } from "./Event";
 import type { UpdateEventInput } from "./UpdateEventInput";
 import {
@@ -34,6 +34,14 @@ export type Timeframe = "upcoming" | "this-week" | "this-weekend";
 export interface EventFilters {
   category?: string;
   timeframe?: string;
+}
+
+export interface OrganizerAnalytics {
+  totalEvents: number;
+  totalAttendees: number;
+  avgFillRate: number | null;
+  topEvent: { eventId: string; title: string; goingCount: number } | null;
+  rows: EventAnalyticsRow[];
 }
 
 export interface IEventService {
@@ -79,7 +87,8 @@ export interface IEventService {
   getArchivedCategories(): Promise<Result<string[], EventError>>;
   
   listEvents(
-    filters: EventFilters
+    filters: EventFilters,
+    query?: string,
   ): Promise<Result<Event[], EventError>>;
 
   createEvent(input: CreateEventInput): Promise<Result<Event, EventError>>;
@@ -89,6 +98,7 @@ export interface IEventService {
     userRole: UserRole,
   ): Promise<Result<Event[], EventError>>;
 
+  getOrganizerAnalytics(userId: string): Promise<Result<OrganizerAnalytics, EventError>>;
 
 }
 
@@ -371,7 +381,34 @@ class EventService implements IEventService {
     return Ok(events);
   }
 
+  async getOrganizerAnalytics(userId: string): Promise<Result<OrganizerAnalytics, EventError>> {
+    const rows = await this.eventRepository.getOrganizerAnalytics(userId);
 
+    const totalEvents = rows.length;
+    const totalAttendees = rows.reduce((sum, r) => sum + r.goingCount, 0);
+
+    const withCapacity = rows.filter((r) => r.capacity !== undefined && r.capacity > 0);
+    const avgFillRate =
+      withCapacity.length > 0
+        ? withCapacity.reduce((sum, r) => sum + r.goingCount / r.capacity!, 0) /
+          withCapacity.length
+        : null;
+
+    const topEvent =
+      rows.length > 0
+        ? rows.reduce((best, r) => (r.goingCount > best.goingCount ? r : best))
+        : null;
+
+    return Ok({
+      totalEvents,
+      totalAttendees,
+      avgFillRate,
+      topEvent: topEvent
+        ? { eventId: topEvent.eventId, title: topEvent.title, goingCount: topEvent.goingCount }
+        : null,
+      rows,
+    });
+  }
 
   private validateUpdateInput(updates: UpdateEventInput): EventError | null {
     if (!updates.title || updates.title.trim().length === 0) {
@@ -419,7 +456,7 @@ class EventService implements IEventService {
     return null;
   }
 
-  async listEvents(filters: EventFilters): Promise<Result<Event[], EventError>> {
+  async listEvents(filters: EventFilters, query: string = ""): Promise<Result<Event[], EventError>> {
     if (filters.category && filters.category.length > 100) {
       return Err(ValidationError("Category filter is too long (max 100 characters)."));
     }
@@ -448,6 +485,17 @@ class EventService implements IEventService {
       startAfter,
       startBefore,
     });
+
+    if (query.trim().length > 0) {
+      const lower = query.trim().toLowerCase();
+      const searched = events.filter(
+        (e) =>
+          e.title.toLowerCase().includes(lower) ||
+          e.description.toLowerCase().includes(lower) ||
+          e.location.toLowerCase().includes(lower),
+      );
+      return Ok(searched);
+    }
 
     return Ok(events);
   }

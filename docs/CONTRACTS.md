@@ -5,6 +5,11 @@ Return types use `Result<T, E>` from `src/lib/result.ts`.
 
 ---
 
+
+## Running User Seed
+
+Before running the site, make sure to run `npx prisma migrate dev` and `npm rund db:seed` in order to login.
+
 ## IEventService
 
 Shared by: Event Edit (F2), Publish/Cancel (F3), RSVP Toggle (F4), Event Search (F5), My RSVPs (F7), Past Event Archiving (F6).

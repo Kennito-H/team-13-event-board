@@ -1,63 +1,260 @@
-<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg">
+<section class="mb-5 p-6 border border-slate-200 rounded-2xl bg-gradient-to-b from-white to-slate-50 shadow-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+  <div>
     <h1 class="text-3xl font-bold text-slate-900 mb-1">Organizer Dashboard</h1>
     <p class="text-slate-500">Events you are organizing.</p>
-  </section>
+  </div>
+  <a href="/events/new" class="px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium no-underline hover:bg-blue-700 text-center">
+    + Create Event
+  </a>
+</section>
+
+<% if (analytics) { %>
+  <section class="mb-5" x-data="{ showBreakdown: false }">
   
-  <% if (eventsWithCounts.length === 0) { %>
-    <section class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg text-center">
-      <p class="text-slate-500 mb-4">You have not created any events yet.</p>
-      <a href="/events/new" class="px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium no-underline hover:bg-blue-700">
-        Create an Event
-      </a>
-    </section>
-  <% } else { %>
-    <section class="border border-slate-200 rounded-2xl bg-white shadow-lg overflow-hidden">
-      <table class="w-full text-sm">
-        <thead class="bg-slate-50 border-b border-slate-200">
-          <tr>
-            <th class="text-left px-5 py-3 font-semibold text-slate-700">Event</th>
-            <th class="text-left px-5 py-3 font-semibold text-slate-700">Status</th>
-            <th class="text-left px-5 py-3 font-semibold text-slate-700">Going</th>
-            <th class="text-left px-5 py-3 font-semibold text-slate-700">Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          <% for (const { event, going } of eventsWithCounts) { %>
-            <tr class="hover:bg-slate-50">
-              <td class="px-5 py-4">
-                <a href="/events/<%= event.id %>" class="font-medium text-slate-900 hover:text-blue-700 no-underline">
-                  <%= event.title %>
-                </a>
-                <p class="text-xs text-slate-400 mt-0.5"><%= new Date(event.startDateTime).toLocaleDateString() %></p>
-              </td>
-              <td class="px-5 py-4">
-                <span class="px-2.5 py-1 rounded-full text-xs font-semibold
-                  <%= event.status === 'published' ? 'bg-green-100 text-green-700' :
-                      event.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                      event.status === 'past' ? 'bg-slate-100 text-slate-500' :
-                      'bg-yellow-100 text-yellow-700' %>">
-                  <%= event.status %>
-                </span>
-              </td>
-              <td class="px-5 py-4 text-slate-600">
-                <%= going %>
-              </td>
-              <td class="px-5 py-4">
-                <div class="flex items-center gap-2">
-                  <% if (event.status !== "cancelled" && event.status !== "past") { %>
-                    <a href="/events/<%= event.id %>/edit" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50">
-                      Edit
-                    </a>
-                  <% } %>
-                  <a href="/events/<%= event.id %>" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50">
-                    View
-                  </a>
-                </div>
-              </td>
-            </tr>
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <p class="text-xs uppercase tracking-widest text-slate-400 font-semibold mb-0.5">Optional Feature</p>
+        <h2 class="text-lg font-semibold text-slate-800">Event Analytics</h2>
+      </div>
+      <button @click="showBreakdown = !showBreakdown"
+              class="text-xs text-blue-600 hover:text-blue-800 font-medium bg-transparent border-0 cursor-pointer">
+        <span x-text="showBreakdown ? 'Hide breakdown' : 'Show breakdown'"></span>
+      </button>
+    </div>
+  
+    <%# Stat cards %>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+      <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Total Events</p>
+        <p class="text-3xl font-black text-slate-900"><%= analytics.totalEvents %></p>
+      </div>
+      <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Total Attendees</p>
+        <p class="text-3xl font-black text-slate-900"><%= analytics.totalAttendees %></p>
+      </div>
+      <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Avg Fill Rate</p>
+        <p class="text-3xl font-black text-slate-900">
+          <% if (analytics.avgFillRate !== null) { %>
+            <%= Math.round(analytics.avgFillRate * 100) %>%
+          <% } else { %>
+            <span class="text-slate-400">N/A</span>
           <% } %>
-        </tbody>
-      </table>
-    </section>
+        </p>
+      </div>
+      <div class="p-4 border border-slate-200 rounded-2xl bg-white shadow-sm">
+        <p class="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Top Event</p>
+        <% if (analytics.topEvent) { %>
+          <p class="text-sm font-bold text-slate-900 leading-tight truncate"><%= analytics.topEvent.title %></p>
+          <p class="text-xs text-slate-400 mt-0.5"><%= analytics.topEvent.goingCount %> going</p>
+        <% } else { %>
+          <p class="text-3xl font-black text-slate-400">N/A</p>
+        <% } %>
+      </div>
+    </div>
+  
+    <%# Per-event breakdown (collapsible with Alpine.js) %>
+    <div x-show="showBreakdown"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 -translate-y-1"
+         x-transition:enter-end="opacity-100 translate-y-0">
+      <div class="border border-slate-200 rounded-2xl bg-white shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-slate-50 border-b border-slate-200">
+            <tr>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600">Event</th>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600">Category</th>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600 whitespace-nowrap">Going</th>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600 whitespace-nowrap">Waitlisted</th>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600 whitespace-nowrap">Fill Rate</th>
+              <th class="text-left px-5 py-3 font-semibold text-slate-600">Status</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <% for (const row of analytics.rows) { %>
+              <%
+                const fillPct = row.capacity ? Math.round(row.goingCount / row.capacity * 100) : null;
+                const barColor = fillPct === null ? '' : fillPct >= 90 ? 'bg-red-400' : fillPct >= 60 ? 'bg-yellow-400' : 'bg-green-400';
+              %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-5 py-3">
+                  <a href="/events/<%= row.eventId %>" class="font-medium text-slate-800 hover:text-blue-700 no-underline"><%= row.title %></a>
+                </td>
+                <td class="px-5 py-3 text-slate-500 capitalize"><%= row.category %></td>
+                <td class="px-5 py-3 text-slate-700 font-medium"><%= row.goingCount %></td>
+                <td class="px-5 py-3 text-slate-500"><%= row.waitlistedCount %></td>
+                <td class="px-5 py-3">
+                  <% if (fillPct !== null) { %>
+                    <div class="flex items-center gap-2">
+                      <div class="w-16 bg-slate-100 rounded-full h-1.5">
+                        <div class="<%= barColor %> h-1.5 rounded-full" style="width: <%= Math.min(fillPct, 100) %>%"></div>
+                      </div>
+                      <span class="text-slate-600 text-xs"><%= fillPct %>%</span>
+                    </div>
+                  <% } else { %>
+                    <span class="text-slate-400 text-xs">No cap</span>
+                  <% } %>
+                </td>
+                <td class="px-5 py-3">
+                  <span class="px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap
+                    <%= row.status === 'published' ? 'bg-green-100 text-green-700' :
+                        row.status === 'draft'     ? 'bg-yellow-100 text-yellow-700' :
+                                                     'bg-slate-100 text-slate-500' %>">
+                    <%= row.status %>
+                  </span>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  
+  </section>
   <% } %>
   
+
+<%
+  const published = eventsWithCounts.filter(({ event }) => event.status === 'published');
+  const draft = eventsWithCounts.filter(({ event }) => event.status === 'draft');
+  const closedEvents = eventsWithCounts.filter(({ event }) => event.status === 'cancelled' || event.status === 'past');
+%>
+
+<% if (eventsWithCounts.length === 0) { %>
+  <section class="p-6 border border-slate-200 rounded-2xl bg-white shadow-lg text-center">
+    <p class="text-slate-500 mb-4">You have not created any events yet.</p>
+    <a href="/events/new" class="px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium no-underline hover:bg-blue-700">
+      Create an Event
+    </a>
+  </section>
+<% } else { %>
+
+  <%# Published %>
+  <% if (published.length > 0) { %>
+    <section class="mb-5">
+      <div class="flex items-center gap-3 mb-3">
+        <h2 class="text-lg font-semibold text-slate-800">Published</h2>
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700"><%= published.length %></span>
+      </div>
+      <div class="border border-green-200 rounded-2xl bg-white shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-green-50 border-b border-green-200">
+            <tr>
+              <th class="text-left px-5 py-3 font-semibold text-green-800">Event</th>
+              <th class="text-left px-5 py-3 font-semibold text-green-800 whitespace-nowrap">Going</th>
+              <th class="text-left px-5 py-3 font-semibold text-green-800">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <% for (const { event, going } of published) { %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-5 py-4">
+                  <a href="/events/<%= event.id %>" class="font-medium text-slate-900 hover:text-blue-700 no-underline"><%= event.title %></a>
+                  <p class="text-xs text-slate-400 mt-0.5 whitespace-nowrap"><%= new Date(event.startDateTime).toLocaleDateString() %></p>
+                </td>
+                <td class="px-5 py-4 text-slate-600"><%= going %></td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-2">
+                    <a href="/events/<%= event.id %>/edit" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50 whitespace-nowrap">Edit</a>
+                    <a href="/events/<%= event.id %>" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50 whitespace-nowrap">View</a>
+                  </div>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  <% } %>
+
+  <%# Draft %>
+  <% if (draft.length > 0) { %>
+    <section class="mb-5">
+      <div class="flex items-center gap-3 mb-3">
+        <h2 class="text-lg font-semibold text-slate-800">Drafts</h2>
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700"><%= draft.length %></span>
+      </div>
+      <div class="border border-yellow-200 rounded-2xl bg-white shadow-sm overflow-x-auto">
+        <table class="min-w-full text-sm">
+          <thead class="bg-yellow-50 border-b border-yellow-200">
+            <tr>
+              <th class="text-left px-5 py-3 font-semibold text-yellow-800">Event</th>
+              <th class="text-left px-5 py-3 font-semibold text-yellow-800 whitespace-nowrap">Going</th>
+              <th class="text-left px-5 py-3 font-semibold text-yellow-800">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <% for (const { event, going } of draft) { %>
+              <tr class="hover:bg-slate-50">
+                <td class="px-5 py-4">
+                  <a href="/events/<%= event.id %>" class="font-medium text-slate-900 hover:text-blue-700 no-underline"><%= event.title %></a>
+                  <p class="text-xs text-slate-400 mt-0.5 whitespace-nowrap"><%= new Date(event.startDateTime).toLocaleDateString() %></p>
+                </td>
+                <td class="px-5 py-4 text-slate-600"><%= going %></td>
+                <td class="px-5 py-4">
+                  <div class="flex items-center gap-2">
+                    <a href="/events/<%= event.id %>/edit" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50 whitespace-nowrap">Edit</a>
+                    <a href="/events/<%= event.id %>" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-600 text-xs font-medium no-underline hover:bg-slate-50 whitespace-nowrap">View</a>
+                  </div>
+                </td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  <% } %>
+
+  <%# Cancelled / Past — collapsed by default %>
+  <% if (closedEvents.length > 0) { %>
+    <section x-data="{ open: false }">
+      <button @click="open = !open"
+              class="flex items-center gap-3 mb-3 cursor-pointer group bg-transparent border-0 p-0">
+        <h2 class="text-lg font-semibold text-slate-400 group-hover:text-slate-600 transition-colors">Cancelled &amp; Past</h2>
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-500"><%= closedEvents.length %></span>
+        <svg :class="open ? 'rotate-180' : ''"
+             class="w-4 h-4 text-slate-400 transition-transform duration-200"
+             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      <div x-show="open"
+           x-transition:enter="transition ease-out duration-200"
+           x-transition:enter-start="opacity-0 -translate-y-2"
+           x-transition:enter-end="opacity-100 translate-y-0">
+        <div class="border border-slate-200 rounded-2xl bg-slate-50 overflow-x-auto">
+          <table class="min-w-full text-sm">
+            <thead class="bg-slate-100 border-b border-slate-200">
+              <tr>
+                <th class="text-left px-5 py-3 font-semibold text-slate-500">Event</th>
+                <th class="text-left px-5 py-3 font-semibold text-slate-500 whitespace-nowrap">Status</th>
+                <th class="text-left px-5 py-3 font-semibold text-slate-500 whitespace-nowrap">Going</th>
+                <th class="text-left px-5 py-3 font-semibold text-slate-500">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              <% for (const { event, going } of closedEvents) { %>
+                <tr class="opacity-60">
+                  <td class="px-5 py-4">
+                    <a href="/events/<%= event.id %>" class="font-medium text-slate-600 hover:text-blue-700 no-underline"><%= event.title %></a>
+                    <p class="text-xs text-slate-400 mt-0.5 whitespace-nowrap"><%= new Date(event.startDateTime).toLocaleDateString() %></p>
+                  </td>
+                  <td class="px-5 py-4">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-semibold <%= event.status === 'cancelled' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500' %> whitespace-nowrap">
+                      <%= event.status %>
+                    </span>
+                  </td>
+                  <td class="px-5 py-4 text-slate-400"><%= going %></td>
+                  <td class="px-5 py-4">
+                    <a href="/events/<%= event.id %>" class="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-500 text-xs font-medium no-underline hover:bg-slate-100 whitespace-nowrap">View</a>
+                  </td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  <% } %>
+
+<% } %>

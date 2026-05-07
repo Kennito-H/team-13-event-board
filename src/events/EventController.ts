@@ -55,7 +55,7 @@ export interface IEventController {
   showEventList(
     res: Response,
     session: IAppBrowserSession,
-    query: { category?: string; timeframe?: string },
+    query: { category?: string; timeframe?: string; query?: string },
     isHtmx: boolean,
   ): Promise<void>;
 
@@ -441,59 +441,62 @@ class EventController implements IEventController {
 
 
   async showEventList(
-    res: Response,
-    session: IAppBrowserSession,
-    query: { category?: string; timeframe?: string },
-    isHtmx: boolean,
-  ): Promise<void> {
-    const filters: EventFilters = {};
+  res: Response,
+  session: IAppBrowserSession,
+  query: { category?: string; timeframe?: string; query?: string },
+  isHtmx: boolean,
+): Promise<void> {
+  const filters: EventFilters = {};
 
-    if (query.category && query.category.trim().length > 0) {
-      filters.category = query.category.trim();
-    }
+  if (query.category && query.category.trim().length > 0) {
+    filters.category = query.category.trim();
+  }
+  if (query.timeframe && query.timeframe.trim().length > 0) {
+    filters.timeframe = query.timeframe.trim();
+  }
 
-    if (query.timeframe && query.timeframe.trim().length > 0) {
-      filters.timeframe = query.timeframe.trim();
-    }
+  const result = await this.eventService.listEvents(filters, query.query ?? "");
 
-    const result = await this.eventService.listEvents(filters);
-
-    if (result.ok === false) {
-      if (isHtmx) {
-        res.status(400).render("events/partials/list-results", {
-          events: [],
-          pageError: result.value.message,
-          layout: false,
-        });
-        return;
-      }
-      res.status(400).render("events/list", {
-        session,
-        events: [],
-        selectedCategory: query.category ?? "",
-        selectedTimeframe: query.timeframe ?? "",
-        pageError: result.value.message,
-      });
-      return;
-    }
-
+  if (result.ok === false) {
     if (isHtmx) {
-      res.render("events/partials/list-results", {
-        events: result.value,
-        pageError: null,
+      res.status(400).render("events/partials/list-results", {
+        events: [],
+        selectedQuery: query.query ?? "",
+        pageError: result.value.message,
         layout: false,
       });
       return;
     }
-
-    res.render("events/list", {
+    res.status(400).render("events/list", {
       session,
-      events: result.value,
+      events: [],
       selectedCategory: query.category ?? "",
       selectedTimeframe: query.timeframe ?? "",
-      pageError: null,
+      selectedQuery: query.query ?? "",
+      pageError: result.value.message,
     });
+    return;
   }
+
+  if (isHtmx) {
+    res.render("events/partials/list-results", {
+      events: result.value,
+      selectedQuery: query.query ?? "",
+      pageError: null,
+      layout: false,
+    });
+    return;
+  }
+
+  res.render("events/list", {
+    session,
+    events: result.value,
+    selectedCategory: query.category ?? "",
+    selectedTimeframe: query.timeframe ?? "",
+    selectedQuery: query.query ?? "",
+    pageError: null,
+  });
+}
 
   async showSearchPage(
     res: Response,
@@ -718,26 +721,30 @@ class EventController implements IEventController {
     userRole: UserRole,
     session?: IAppBrowserSession,
   ): Promise<void> {
-    const result = await this.eventService.getOrganizerEvents(userId, userRole);
-
-    if (result.ok === false) {
+    const [eventsResult, analyticsResult] = await Promise.all([
+      this.eventService.getOrganizerEvents(userId, userRole),
+      this.eventService.getOrganizerAnalytics(userId),
+    ]);
+  
+    if (eventsResult.ok === false) {
       res.status(500).render('partials/error', { message: 'Unexpected server error.', layout: false });
       return;
     }
-
-    const events = result.value;
-
+  
     const eventsWithCounts = await Promise.all(
-      events.map(async (event) => {
+      eventsResult.value.map(async (event) => {
         const going = this.rsvpRepository
           ? await this.rsvpRepository.countActiveByEvent(event.id)
           : 0;
         return { event, going };
       }),
     );
-
-    res.render('events/orgDashboard', { eventsWithCounts, session });
+  
+    const analytics = analyticsResult.ok ? analyticsResult.value : null;
+  
+    res.render('events/orgDashboard', { eventsWithCounts, analytics, session });
   }
+  
 }
 
 export function CreateEventController(

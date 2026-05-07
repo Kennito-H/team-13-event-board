@@ -10,7 +10,11 @@
     "test:watch": "jest --watch",
     "prisma:generate": "dotenv -e .env -- prisma generate",
     "prisma:migrate": "prisma migrate dev --name init",
+    "db:seed": "npx tsx prisma/seed.ts",
     "clean": "rimraf dist node_modules"
+  },
+  "prisma": {
+  "seed": "npx tsx prisma/seed.ts"
   },
   "keywords": [],
   "author": "",
@@ -18,7 +22,7 @@
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.0.0",
     "@prisma/client": "^7.0.0",
-    "better-sqlite3": "^11.7.2",
+    "better-sqlite3": "^12.9.0",
     "dotenv": "^17.2.3",
     "ejs": "^4.0.1",
     "express": "^5.2.1",
