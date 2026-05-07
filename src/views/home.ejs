@@ -232,7 +232,6 @@
       <line x1="0" y1="347" x2="560" y2="347" stroke="#b07010" stroke-width="0.6" opacity="0.5"/>
       <line x1="0" y1="358" x2="560" y2="358" stroke="#b07010" stroke-width="0.6" opacity="0.5"/>
       <line x1="0" y1="369" x2="560" y2="369" stroke="#b07010" stroke-width="0.6" opacity="0.5"/>
-      <path d="M 72 325 Q 280 242 488 325" fill="none" stroke="#f0a825" stroke-width="2" stroke-dasharray="9,5" opacity="0.7"/>
 
       <rect x="527" y="172" width="11" height="153" fill="#334155" rx="3"/>
       <rect x="500" y="48"  width="15" height="132" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1.5" rx="2"/>
@@ -259,17 +258,22 @@
       </g>
 
       <g opacity="0.26" stroke="#3b82f6" stroke-linecap="round" fill="none">
-        <circle cx="52" cy="248" r="11" fill="#3b82f6" stroke="none"/>
-        <line x1="52" y1="259" x2="52" y2="296" stroke-width="9"/>
-        <line x1="52" y1="268" x2="77" y2="278" stroke-width="6"/>
-        <line x1="52" y1="270" x2="33" y2="282" stroke-width="6"/>
-        <line x1="52" y1="296" x2="38" y2="325" stroke-width="8"/>
-        <line x1="52" y1="296" x2="66" y2="325" stroke-width="8"/>
-        <line x1="38" y1="325" x2="29" y2="325" stroke-width="5"/>
-        <line x1="66" y1="325" x2="75" y2="325" stroke-width="5"/>
+        <circle cx="27" cy="248" r="11" fill="#3b82f6" stroke="none"/>
+        <line x1="27" y1="259" x2="27" y2="296" stroke-width="9"/>
+        <line x1="27" y1="268" x2="52" y2="278" stroke-width="6"/>
+        <line x1="27" y1="270" x2="8"  y2="282" stroke-width="6"/>
+        <line x1="27" y1="296" x2="13" y2="325" stroke-width="8"/>
+        <line x1="27" y1="296" x2="41" y2="325" stroke-width="8"/>
+        <line x1="13" y1="325" x2="4"  y2="325" stroke-width="5"/>
+        <line x1="41" y1="325" x2="50" y2="325" stroke-width="5"/>
       </g>
 
-      <ellipse :opacity="shooting ? '0' : '1'" cx="80" cy="323" rx="22" ry="5" fill="rgba(0,0,0,0.38)"/>
+      <ellipse :opacity="shooting ? '0' : '1'" cx="55" cy="323" rx="22" ry="5" fill="rgba(0,0,0,0.38)"/>
+
+      <path x-show="!shooting && powerLevel > 0"
+            :d="trajectoryPath"
+            fill="none" stroke="#fbbf24" stroke-width="2"
+            stroke-dasharray="5,5" stroke-linecap="round" opacity="0.75"/>
 
       <g :transform="`translate(${ballX - 80}, ${ballY - 300}) rotate(${ballRotation}, 80, 300)`"
          :style="shooting ? 'filter: drop-shadow(0 0 10px rgba(249,115,22,0.65))' : ''">
@@ -286,25 +290,43 @@
     </svg>
   </div>
 
-  <div class="flex gap-3 mt-4 select-none">
-    <button
-      @click="shoot()"
-      :disabled="shooting"
-      class="flex-1 py-3.5 px-6 rounded-xl font-bold text-lg text-white shadow-lg
-             bg-orange-500 hover:bg-orange-600 active:scale-95 transition-all
-             disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
-    >
-      🏀 Shoot the Ball
-    </button>
-    <button
-      @click="reset()"
-      :disabled="shooting"
-      class="py-3.5 px-5 rounded-xl font-medium text-slate-700 bg-white border border-slate-200
-             hover:bg-slate-50 active:scale-95 transition-all shadow
-             disabled:opacity-40 disabled:cursor-not-allowed"
-    >
-      Reset
-    </button>
+  <div class="mt-4 select-none space-y-3">
+
+    <div class="h-4 rounded-full bg-slate-200 overflow-hidden relative">
+      <div class="absolute inset-y-0 bg-amber-300/70 transition-all duration-200"
+           :style="`left: ${Math.max(0, targetPower - 7)}%; width: ${Math.min(4, targetPower - 3)}%`"></div>
+      <div class="absolute inset-y-0 bg-amber-300/70 transition-all duration-200"
+           :style="`left: ${targetPower + 3}%; width: ${Math.min(4, 100 - (targetPower + 3))}%`"></div>
+      <div class="absolute inset-y-0 bg-emerald-300/80 transition-all duration-200"
+           :style="`left: ${targetPower - 3}%; width: 6%`"></div>
+      <div class="absolute inset-y-0 left-0 bg-gradient-to-r from-emerald-400 via-yellow-400 to-red-500 transition-[width] duration-75 mix-blend-multiply"
+           :style="`width: ${powerLevel}%`"></div>
+      <div class="absolute inset-y-0 border-l-2 border-r-2 border-emerald-700/90 transition-all duration-200"
+           :style="`left: ${targetPower - 3}%; width: 6%`"></div>
+    </div>
+
+    <div class="flex gap-3">
+      <button
+        @mousedown="startPowerCharge()" @mouseup="releaseAndShoot()" @mouseleave="releaseAndShoot()"
+        @touchstart.prevent="startPowerCharge()" @touchend.prevent="releaseAndShoot()"
+        :disabled="shooting"
+        class="flex-1 py-3.5 px-6 rounded-xl font-bold text-lg text-white shadow-lg
+               bg-orange-500 hover:bg-orange-600 active:scale-95 transition-all
+               disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+      >
+        <span x-show="!chargingPower">🏀 Hold to Shoot</span>
+        <span x-show="chargingPower" x-text="'Release! ' + Math.round(powerLevel) + '%'"></span>
+      </button>
+      <button
+        @click="reset()"
+        :disabled="shooting || chargingPower"
+        class="py-3.5 px-5 rounded-xl font-medium text-slate-700 bg-white border border-slate-200
+               hover:bg-slate-50 active:scale-95 transition-all shadow
+               disabled:opacity-40 disabled:cursor-not-allowed"
+      >
+        Reset
+      </button>
+    </div>
   </div>
 
 </section>
@@ -312,19 +334,70 @@
 <script>
   function basketballGame() {
     return {
-      ballX: 80, ballY: 300, ballRotation: 0,
+      ballX: 55, ballY: 300, ballRotation: 0,
       shooting: false, scored: false, missed: false, netJiggling: false,
       score: 0, attempts: 0, made: 0, streak: 0,
 
-      lerp(a, b, t) { return a + (b - a) * t; },
+      chargingPower: false, powerLevel: 0, powerDirection: 1, powerTimer: null,
 
-      bezier(p0, ctrl, p1, t) {
-        const mt = 1 - t;
-        return mt * mt * p0 + 2 * mt * t * ctrl + t * t * p1;
+      targetPower: 80,
+
+      gravity: 2000,
+
+      get trajectoryPath() {
+        const phys = this.shotPhysics(this.powerLevel);
+        const totalT = this.flightTime(phys);
+        const halfT = totalT / 2;
+        const steps = 18;
+        let path = `M ${phys.sx.toFixed(1)} ${phys.sy.toFixed(1)}`;
+        for (let i = 1; i <= steps; i++) {
+          const t = (halfT / steps) * i;
+          const x = phys.sx + phys.vx * t;
+          const y = phys.sy + phys.vy * t + 0.5 * this.gravity * t * t;
+          path += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+        }
+        return path;
       },
 
-      easeInOut(t) {
-        return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+      shotPhysics(power) {
+        const sx = 55, sy = 300;
+        const t = power / this.targetPower;
+        const vx = 478 * t;
+        const vy = -1014 * t;
+        return { sx, sy, vx, vy };
+      },
+
+      flightTime(phys) {
+        const a = 0.5 * this.gravity;
+        const b = phys.vy;
+        const c = phys.sy - 325;
+        const disc = b * b - 4 * a * c;
+        return disc < 0 ? 1 : (-b + Math.sqrt(disc)) / (2 * a);
+      },
+
+      randomizeTarget() {
+        this.targetPower = Math.floor(30 + Math.random() * 50);
+      },
+
+      startPowerCharge() {
+        if (this.shooting || this.chargingPower) return;
+        this.randomizeTarget();
+        this.chargingPower = true;
+        this.powerLevel = 0;
+        this.powerDirection = 1;
+        this.powerTimer = setInterval(() => {
+          this.powerLevel += this.powerDirection * 2.3;
+          if (this.powerLevel >= 100) { this.powerLevel = 100; this.powerDirection = -1; }
+          if (this.powerLevel <= 0)   { this.powerLevel = 0;   this.powerDirection = 1; }
+        }, 20);
+      },
+
+      releaseAndShoot() {
+        if (!this.chargingPower) return;
+        clearInterval(this.powerTimer);
+        this.chargingPower = false;
+        this.shoot();
+        setTimeout(() => { this.powerLevel = 0; }, 400);
       },
 
       shoot() {
@@ -334,26 +407,69 @@
         this.missed = false;
         this.attempts++;
 
-        const willMiss = Math.random() < 0.25;
-        const sx = 80, sy = 300, cx = 220, cy = 15;
-        const ex = willMiss ? 424 : 461;
-        const ey = willMiss ? 163 : 161;
-        const duration = 850;
-        const startTime = performance.now();
+        const phys = this.shotPhysics(this.powerLevel);
+        let posX = phys.sx, posY = phys.sy;
+        const jitter = 0.05;
+        let vx = phys.vx * (1 + (Math.random() - 0.5) * 2 * jitter);
+        let vy = phys.vy * (1 + (Math.random() - 0.5) * 2 * jitter);
+        let elapsed = 0;
+        const ballR = 24;
+        const rimY = 164, rimL = 445, rimR = 478;
+        let lastT = performance.now();
 
         const animate = (now) => {
-          const raw = Math.min((now - startTime) / duration, 1);
-          const t = this.easeInOut(raw);
-          this.ballX = this.bezier(sx, cx, ex, t);
-          this.ballY = this.bezier(sy, cy, ey, t);
-          this.ballRotation = raw * 700;
-          if (raw < 1) {
-            requestAnimationFrame(animate);
-          } else if (!willMiss) {
+          const dt = Math.min((now - lastT) / 1000, 0.033);
+          lastT = now;
+          elapsed += dt;
+          const prevY = posY;
+          vy += this.gravity * dt;
+          posX += vx * dt;
+          posY += vy * dt;
+
+          if (vy > 0 && prevY < rimY && posY >= rimY && posX > rimL && posX < rimR) {
+            this.ballX = posX; this.ballY = posY;
             this.onMake();
-          } else {
-            this.onMiss();
+            return;
           }
+
+          const bbL = 500, bbR = 515, bbT = 48, bbB = 180;
+          if (posX + ballR > bbL && posX - ballR < bbR &&
+              posY + ballR > bbT && posY - ballR < bbB) {
+            const oL = (posX + ballR) - bbL;
+            const oR = bbR - (posX - ballR);
+            const oT = (posY + ballR) - bbT;
+            const oB = bbB - (posY - ballR);
+            const m = Math.min(oL, oR, oT, oB);
+            if (m === oL && vx > 0)      { posX = bbL - ballR; vx = -Math.abs(vx) * 0.5; }
+            else if (m === oR && vx < 0) { posX = bbR + ballR; vx =  Math.abs(vx) * 0.5; }
+            else if (m === oT && vy > 0) { posY = bbT - ballR; vy = -Math.abs(vy) * 0.4; vx *= 0.7; }
+            else if (m === oB && vy < 0) { posY = bbB + ballR; vy =  Math.abs(vy) * 0.4; }
+          }
+
+          if (!(posX > rimL && posX < rimR)) {
+            for (const post of [{ x: 425, y: 160 }, { x: 497, y: 160 }]) {
+              const dx = posX - post.x, dy = posY - post.y;
+              const d = Math.hypot(dx, dy);
+              if (d < ballR + 4 && d > 0) {
+                const nx = dx / d, ny = dy / d;
+                posX = post.x + nx * (ballR + 4);
+                posY = post.y + ny * (ballR + 4);
+                const vDotN = vx * nx + vy * ny;
+                if (vDotN < 0) { vx -= 1.4 * vDotN * nx; vy -= 1.4 * vDotN * ny; }
+              }
+            }
+          }
+
+          this.ballX = posX;
+          this.ballY = posY;
+          this.ballRotation = elapsed * 720;
+
+          if (posY >= 325 - ballR || posX > 580 || posX < -50) {
+            this.ballY = Math.min(posY, 325 - ballR);
+            this.onMiss();
+            return;
+          }
+          requestAnimationFrame(animate);
         };
         requestAnimationFrame(animate);
       },
@@ -371,32 +487,19 @@
       onMiss() {
         this.streak = 0;
         this.missed = true;
-        const bx = this.ballX, by = this.ballY, br = this.ballRotation;
-        const fallDuration = 640;
-        const startTime = performance.now();
-        const fall = (now) => {
-          const t = Math.min((now - startTime) / fallDuration, 1);
-          const et = t * t;
-          this.ballX = bx + this.lerp(0, 58, t);
-          this.ballY = by + this.lerp(0, 235, et);
-          this.ballRotation = br + t * 215;
-          if (t < 1) {
-            requestAnimationFrame(fall);
-          } else {
-            setTimeout(() => { this.missed = false; this.resetBall(); }, 320);
-          }
-        };
-        requestAnimationFrame(fall);
+        setTimeout(() => { this.missed = false; this.resetBall(); }, 800);
       },
 
       resetBall() {
-        this.ballX = 80; this.ballY = 300; this.ballRotation = 0; this.shooting = false;
+        this.ballX = 55; this.ballY = 300; this.ballRotation = 0; this.shooting = false;
       },
 
       reset() {
-        if (this.shooting) return;
+        if (this.shooting || this.chargingPower) return;
+        clearInterval(this.powerTimer);
         Object.assign(this, { score: 0, attempts: 0, made: 0, streak: 0,
-          scored: false, missed: false, netJiggling: false });
+          scored: false, missed: false, netJiggling: false,
+          powerLevel: 0 });
         this.resetBall();
       },
     };
